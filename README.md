@@ -1,5 +1,10 @@
 # 文章收藏系统 - Django 版本
 
+![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
+![Django](https://img.shields.io/badge/django-v5.2-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![GitHub workflow](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/django-article-collection/django.yml)
+
 基于 Django 和 Django REST Framework 构建的多平台文章收藏系统。
 
 ## 功能特性
