@@ -1,0 +1,103 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}收藏文章 - 文章收藏系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-plus-circle"></i> 收藏文章
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if message %}
+                    <div class="alert alert-{% if message.type == 'success' %}success{% else %}danger{% endif %} alert-dismissible fade show">
+                        {{ message.text }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="url" class="form-label">文章链接</label>
+                        <input type="url" class="form-control" id="url" name="url" 
+                               placeholder="https://mp.weixin.qq.com/s/xxxxx" required>
+                        <div class="form-text">
+                            支持微信公众号、小红书、即刻、知乎、掘金、CSDN等平台
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-bookmark-plus"></i> 收藏
+                    </button>
+                </form>
+
+                {% if article %}
+                <div class="mt-4">
+                    <h6>收藏成功的文章：</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                                    {{ article.title|default:"无标题" }}
+                                </a>
+                            </h6>
+                            {% if article.content %}
+                            <p class="card-text">{{ article.content|truncatechars:200 }}</p>
+                            {% endif %}
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">
+                                    <span class="badge bg-info">{{ article.get_platform_display }}</span>
+                                    {% if article.author %}
+                                        by {{ article.author }}
+                                    {% endif %}
+                                </small>
+                                <small class="text-muted">
+                                    {{ article.collected_at|date:"Y-m-d H:i:s" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> 使用说明
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>支持多个平台的文章链接自动解析</li>
+                    <li>自动提取文章标题、作者、内容等信息</li>
+                    <li>重复链接会自动跳过，不会重复收藏</li>
+                    <li>收藏的文章可以在"文章列表"中查看和搜索</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-code"></i> API 接口
+                </h6>
+            </div>
+            <div class="card-body">
+                <p>也可以通过 API 接口收藏文章：</p>
+                <pre class="bg-light p-3 rounded"><code>POST /api/articles/collect/
+{
+    "url": "https://example.com/article"
+}</code></pre>
+                <a href="/api/articles/" class="btn btn-sm btn-outline-primary" target="_blank">
+                    查看完整 API 文档
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
