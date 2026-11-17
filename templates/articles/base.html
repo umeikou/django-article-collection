@@ -21,7 +21,7 @@
     <nav class="navbar navbar-expand-lg liquid-glass sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'articles:index' %}">
-                于明浩的阅读·收听列表
+                于明浩的阅读列表
             </a>
             
             <!-- 移动端：订阅按钮常驻导航栏，折叠菜单外 -->
@@ -70,6 +70,12 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'changelog' %}active{% endif %}"
                            href="{% url 'articles:changelog' %}">
                             <i class="bi bi-journal-text"></i> 更新记录
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/umeikou/django-article-collection"
+                           target="_blank" rel="noopener">
+                            <i class="bi bi-star"></i> Star 本项目
                         </a>
                     </li>
                 </ul>
@@ -128,7 +134,7 @@
     <footer class="mt-5 py-4" style="background: transparent;">
         <div class="container text-center">
             <p class="text-muted mb-0" style="font-size: 0.875rem;">
-                于明浩的阅读·收听列表
+                于明浩的阅读列表
             </p>
         </div>
     </footer>
