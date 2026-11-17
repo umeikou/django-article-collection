@@ -1,0 +1,31 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="50" cy="50" r="50" fill="#FFA500"/>
+  
+  <!-- 头发 -->
+  <path d="M20 35C20 20 32 10 50 10C68 10 80 20 80 35C80 25 70 20 50 20C30 20 20 25 20 35Z" fill="#2C2C2C"/>
+  
+  <!-- 脸部 -->
+  <circle cx="50" cy="45" r="25" fill="#FFDBAC"/>
+  
+  <!-- 眼镜框 -->
+  <rect x="30" y="38" width="15" height="12" rx="6" fill="none" stroke="#333" stroke-width="2"/>
+  <rect x="55" y="38" width="15" height="12" rx="6" fill="none" stroke="#333" stroke-width="2"/>
+  <line x1="45" y1="44" x2="55" y2="44" stroke="#333" stroke-width="2"/>
+  
+  <!-- 眼睛 -->
+  <circle cx="37.5" cy="44" r="3" fill="#333"/>
+  <circle cx="62.5" cy="44" r="3" fill="#333"/>
+  
+  <!-- 鼻子 -->
+  <circle cx="50" cy="50" r="1" fill="#E6B887"/>
+  
+  <!-- 嘴巴 -->
+  <path d="M45 55C47 57 53 57 55 55" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- 身体/衣服 -->
+  <path d="M25 75C25 65 35 60 50 60C65 60 75 65 75 75L75 100L25 100Z" fill="#333"/>
+  
+  <!-- 衣领 -->
+  <path d="M40 60L50 70L60 60" stroke="#FFF" stroke-width="2" fill="none"/>
+</svg>

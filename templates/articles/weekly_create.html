@@ -1,0 +1,321 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}创建周阅读合集 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content %}
+<!-- 返回按钮 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{% url 'articles:weekly_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> 返回阅读分享
+        </a>
+    </div>
+</div>
+
+<!-- 页面标题 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="text-center">
+            <h2><i class="bi bi-plus-circle"></i> 创建周阅读合集</h2>
+            <p class="text-muted">手动生成本周或指定周的阅读合集</p>
+        </div>
+    </div>
+</div>
+
+<!-- 消息提示 -->
+{% if message %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-{{ message.type }} alert-dismissible fade show" role="alert">
+            {{ message.text }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 创建表单 -->
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="create-form-panel">
+            <form method="post" class="create-form">
+                {% csrf_token %}
+                
+                <div class="form-section">
+                    <h5><i class="bi bi-calendar-week"></i> 合集信息</h5>
+                    <p class="text-muted">系统将自动获取本周（周一至周日）收藏的文章</p>
+                    
+                    <div class="current-week-info">
+                        <div class="week-display">
+                            <span class="week-label">本周范围：</span>
+                            <span class="week-dates" id="currentWeekDates">计算中...</span>
+                        </div>
+                        <div class="article-count-info">
+                            <span class="count-label">预计文章数：</span>
+                            <span class="count-number" id="articleCount">检查中...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-accent btn-lg">
+                        <i class="bi bi-magic"></i>
+                        生成周阅读合集
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 成功创建后的预览 -->
+{% if digest %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="success-preview">
+            <div class="preview-header">
+                <h4><i class="bi bi-check-circle-fill text-success"></i> 合集创建成功！</h4>
+                <p class="text-muted">您可以查看刚创建的合集或继续其他操作</p>
+            </div>
+            
+            <div class="digest-preview-card">
+                <div class="preview-meta">
+                    <span class="week-badge">{{ digest.week_year }}</span>
+                    <span class="article-count">{{ digest.articles.count }} 篇文章</span>
+                </div>
+                <h5 class="preview-title">{{ digest.title }}</h5>
+                <p class="preview-summary">{{ digest.summary|truncatechars:100 }}</p>
+                
+                <div class="preview-actions">
+                    <a href="{% url 'articles:weekly_detail' digest.id %}" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> 查看合集
+                    </a>
+                    <a href="{% url 'articles:weekly_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i> 所有合集
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 说明信息 -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="info-section">
+            <h6><i class="bi bi-lightbulb"></i> 创建说明</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="info-list">
+                        <li>系统会自动获取本周一至周日收藏的所有文章</li>
+                        <li>使用 QWEN AI 为每篇文章生成 300 字浓缩总结</li>
+                        <li>AI 会分析本周阅读内容，生成整体洞察</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="info-list">
+                        <li>如果本周已存在合集，将显示现有合集信息</li>
+                        <li>每周只能创建一个合集，避免重复</li>
+                        <li>系统每周日晚会自动创建合集</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.create-form-panel {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-section {
+    margin-bottom: 32px;
+}
+
+.form-section h5 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.current-week-info {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.week-display, .article-count-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.article-count-info {
+    margin-bottom: 0;
+}
+
+.week-label, .count-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.week-dates, .count-number {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.form-actions {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.success-preview {
+    background: linear-gradient(135deg, #F0F8FF 0%, #E6F7FF 100%);
+    border: 1px solid #91D5FF;
+    border-radius: 16px;
+    padding: 32px;
+}
+
+.preview-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.digest-preview-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+}
+
+.preview-meta {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.week-badge {
+    background: var(--text-primary);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.article-count {
+    background: var(--bg-color);
+    color: var(--text-secondary);
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
+.preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.preview-summary {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.preview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.info-section {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.info-section h6 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.info-list {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.info-list li {
+    margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+    .create-form-panel {
+        padding: 24px;
+    }
+    
+    .week-display, .article-count-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .preview-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 计算当前周的日期范围
+    const today = new Date();
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1));
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    const formatDate = (date) => {
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+    };
+    
+    document.getElementById('currentWeekDates').textContent = 
+        `${formatDate(monday)} - ${formatDate(sunday)}`;
+    
+    // 模拟获取文章数量（实际应该通过API获取）
+    setTimeout(() => {
+        document.getElementById('articleCount').textContent = '检查中...';
+        // 这里可以添加AJAX请求获取实际文章数量
+    }, 500);
+});
+</script>
+{% endblock %}

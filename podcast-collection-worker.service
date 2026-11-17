@@ -1,0 +1,24 @@
+[Unit]
+Description=Article collection Xiaoyuzhou podcast worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nginx
+Group=nginx
+WorkingDirectory=/usr/Project/article_collection_django
+Environment=DJANGO_SETTINGS_MODULE=article_collection_django.settings_production
+EnvironmentFile=/usr/Project/article_collection_django/.env
+EnvironmentFile=/etc/article-collection/podcast-worker.env
+Environment=PYTHONPATH=/usr/Project/article_collection_django
+ExecStart=/usr/bin/python3 /usr/Project/article_collection_django/manage.py process_podcast_tasks --loop --worker-id=podcast-sqlite-1
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/usr/Project/article_collection_django /var/lib/article-collection/podcast-tmp /var/lib/article-collection/podcast-home
+
+[Install]
+WantedBy=multi-user.target

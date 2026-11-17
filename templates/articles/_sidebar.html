@@ -1,0 +1,44 @@
+{% load static %}
+<div class="sidebar-sticky">
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <img src="{% static 'images/avatar.jpg' %}" alt="头像" class="avatar-img">
+            </div>
+            <div class="profile-info">
+                <h5 class="profile-name">umeikou</h5>
+                <p class="profile-title">CSDN D 端运营</p>
+            </div>
+        </div>
+
+        <div class="profile-social">
+            <h6><i class="bi bi-share"></i> 社交平台</h6>
+            <div class="social-links">
+                <a href="https://x.com/minghaofisher?s=21" target="_blank" class="social-link x">
+                    <i class="bi bi-twitter-x"></i>
+                    <span>X (Twitter)</span>
+                </a>
+                <a href="https://github.com/YuandZhang" target="_blank" class="social-link github">
+                    <i class="bi bi-github"></i>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://www.xiaohongshu.com/user/profile/593a140cdb2e6001a3fe583e?xsec_token=YBBTExo93sejIhvJSM0jkGCGY7Gc6oT5kPwOzbH_PY1lg=" target="_blank" class="social-link xiaohongshu">
+                    <i class="bi bi-heart-fill"></i>
+                    <span>小红书</span>
+                </a>
+                <a href="https://v.douyin.com/GKbOJDgzdH4/" target="_blank" class="social-link douyin">
+                    <i class="bi bi-music-note-beamed"></i>
+                    <span>抖音</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="subscription-card">
+        <div class="subscription-header">
+            <h6><i class="bi bi-envelope-heart"></i> 订阅更新</h6>
+            <p class="subscription-subtitle">订阅以获取最新更新并发现宝藏</p>
+        </div>
+        {% include 'articles/_subscription_form.html' %}
+    </div>
+</div>

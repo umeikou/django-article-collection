@@ -79,3 +79,9 @@ static_root/
 # 密钥文件
 secret_key.txt
 .secret
+# 本机运行数据与备份（不进仓库）
+production.db*
+*.bak-*
+logs/
+.cache/
+regen_key_points.log

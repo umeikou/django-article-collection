@@ -135,6 +135,50 @@ class Article(models.Model):
 - **内容分析**: AI内容摘要和标签
 - **社交功能**: 分享和评论系统
 
+## 📧 邮件订阅功能
+
+### 1. 订阅管理
+- **邮箱订阅**: 用户可通过首页订阅周阅读分享
+- **人机验证**: 数学验证码防止机器人订阅
+- **邮箱验证**: 实时验证邮箱格式
+- **退订支持**: 一键退订功能
+
+### 2. 订阅管理后台（仅管理员可见）
+- **数据看板**: 
+  - 实时订阅人数统计
+  - 每日新增人数
+  - 近7天趋势图表
+- **订阅者管理**:
+  - 查看所有订阅者
+  - IP来源追踪
+  - 状态筛选（已激活/已退订）
+- **发送配置**:
+  - 设置每周发送时间（星期几、几点）
+  - 启用/禁用自动发送
+  - 发送日志记录
+
+### 3. 数据模型
+```python
+# 订阅者模型
+class Subscriber(models.Model):
+    email = models.EmailField(unique=True)
+    ip_address = models.GenericIPAddressField()
+    status = models.CharField(max_length=20)  # active/unsubscribed
+    subscribed_at = models.DateTimeField()
+
+# 发送配置模型
+class EmailSendConfig(models.Model):
+    send_weekday = models.IntegerField()  # 0-6
+    send_hour = models.IntegerField()
+    send_minute = models.IntegerField()
+    is_enabled = models.BooleanField()
+```
+
+### 4. 访问路径
+- 订阅管理后台: `/articles/admin/subscription/`
+- 订阅者列表: `/articles/admin/subscription/list/`
+- 发送配置: `/articles/admin/subscription/config/`
+
 ## 📊 使用统计
 
 ### 解析成功率

@@ -1,103 +1,43 @@
 {% extends 'articles/base.html' %}
-
-{% block title %}收藏文章 - 文章收藏系统{% endblock %}
-
+{% block title %}收藏文章 · 于明浩的文章·播客列表{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-plus-circle"></i> 收藏文章
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if message %}
-                    <div class="alert alert-{% if message.type == 'success' %}success{% else %}danger{% endif %} alert-dismissible fade show">
-                        {{ message.text }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endif %}
-
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="url" class="form-label">文章链接</label>
-                        <input type="url" class="form-control" id="url" name="url" 
-                               placeholder="https://mp.weixin.qq.com/s/xxxxx" required>
-                        <div class="form-text">
-                            支持微信公众号、小红书、即刻、知乎、掘金、CSDN等平台
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-bookmark-plus"></i> 收藏
-                    </button>
-                </form>
-
-                {% if article %}
-                <div class="mt-4">
-                    <h6>收藏成功的文章：</h6>
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">
-                                <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
-                                    {{ article.title|default:"无标题" }}
-                                </a>
-                            </h6>
-                            {% if article.content %}
-                            <p class="card-text">{{ article.content|truncatechars:200 }}</p>
-                            {% endif %}
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">
-                                    <span class="badge bg-info">{{ article.get_platform_display }}</span>
-                                    {% if article.author %}
-                                        by {{ article.author }}
-                                    {% endif %}
-                                </small>
-                                <small class="text-muted">
-                                    {{ article.collected_at|date:"Y-m-d H:i:s" }}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-info-circle"></i> 使用说明
-                </h6>
-            </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li>支持多个平台的文章链接自动解析</li>
-                    <li>自动提取文章标题、作者、内容等信息</li>
-                    <li>重复链接会自动跳过，不会重复收藏</li>
-                    <li>收藏的文章可以在"文章列表"中查看和搜索</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-code"></i> API 接口
-                </h6>
-            </div>
-            <div class="card-body">
-                <p>也可以通过 API 接口收藏文章：</p>
-                <pre class="bg-light p-3 rounded"><code>POST /api/articles/collect/
-{
-    "url": "https://example.com/article"
-}</code></pre>
-                <a href="/api/articles/" class="btn btn-sm btn-outline-primary" target="_blank">
-                    查看完整 API 文档
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="row justify-content-center"><div class="col-lg-8">
+  <div class="liquid-glass-panel mb-4" style="padding:2rem;border-radius:12px;">
+    <h2 style="font-size:18px;">智能收藏文章</h2>
+    <form id="collectForm">{% csrf_token %}
+      <div class="mb-3"><label for="url" class="form-label">文章或小宇宙单集链接</label><input type="url" class="form-control" id="url" required maxlength="2048" placeholder="https://www.xiaoyuzhoufm.com/episode/xxxxx"></div>
+      <button type="submit" class="btn btn-accent" id="collectBtn">智能收藏</button>
+    </form>
+    <div id="collectResult" class="mt-4" aria-live="polite"></div>
+  </div>
+  <div class="liquid-glass-panel mb-4" style="padding:1.5rem;border-radius:8px;"><h5>批量收藏</h5><textarea class="form-control mb-3" id="batchUrls" rows="6"></textarea><button type="button" class="btn btn-outline-accent" id="batchBtn">批量收藏</button><div id="batchResult" class="mt-3"></div></div>
+</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const activePollers = new Set();
+  const terminal = new Set(['success', 'failed', 'rejected', 'cancelled', 'needs_attention']);
+  const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const request = (url, method='GET', body) => fetch(url, {method, headers:{'Content-Type':'application/json','X-CSRFToken':csrf()}, body:body ? JSON.stringify(body) : undefined}).then(async r => ({response:r, data:await r.json()}));
+  const text = (tag, value, className='') => { const e=document.createElement(tag); e.textContent=value || ''; if(className)e.className=className; return e; };
+  const articleResult = (article) => { const box=document.createElement('div'); box.className='alert alert-success'; box.append(text('strong','收藏成功：')); const link=document.createElement('a'); link.href=article.url; link.target='_blank'; link.rel='noopener'; link.textContent=article.title || '查看文章'; box.append(link); return box; };
+  function podcastCard(data) {
+    const card=document.createElement('section'); card.className='podcast-progress-card';
+    const title=text('h5','小宇宙播客处理中'); const status=text('div',''); const progress=document.createElement('div'); progress.className='progress'; const bar=document.createElement('div'); bar.className='progress-bar'; progress.append(bar);
+    const chunks=text('div','', 'small text-muted'); const event=text('div','', 'small mt-2'); const actions=document.createElement('div'); actions.className='mt-2 d-flex gap-2'; const article=document.createElement('div');
+    card.append(title,status,progress,chunks,event,actions,article);
+    let timer=null, delay=5000, stopped=false;
+    const stop=()=>{stopped=true;if(timer)clearTimeout(timer);activePollers.delete(stop);}; activePollers.add(stop);
+    const render=(task)=>{ status.textContent=`${task.status} · ${task.stage} · ${task.progress}% ${task.progress_message || ''}`; bar.style.width=`${task.progress}%`; chunks.textContent=`全文分析：片段 ${task.analysis.chunks_completed}/${task.analysis.chunks_total}，汇总 ${task.analysis.rollups_completed}/${task.analysis.rollups_total}`;
+      event.textContent=task.events && task.events.length ? task.events[task.events.length-1].message : (task.next_action || task.error_code || '');
+      actions.replaceChildren(); if(task.retry_allowed){const b=text('button','重试','btn btn-sm btn-outline-primary');b.onclick=()=>request(`/api/tasks/${task.task_id}/retry/`,'POST').then(x=>render(x.data));actions.append(b);} if(task.cancel_allowed){const b=text('button','取消','btn btn-sm btn-outline-danger');b.onclick=()=>request(`/api/tasks/${task.task_id}/cancel/`,'POST').then(x=>render(x.data));actions.append(b);}
+      if(task.article){article.replaceChildren(articleResult(task.article));} if(terminal.has(task.status))stop(); };
+    const poll=()=>{if(stopped)return;request(data.task_url).then(({data:task})=>{render(task);delay=5000;if(!stopped)timer=setTimeout(poll,delay);}).catch(()=>{delay=Math.min(delay*2,30000);if(!stopped)timer=setTimeout(poll,delay);});}; render(data); if(!terminal.has(data.status))timer=setTimeout(poll,delay); return card;
+  }
+  document.getElementById('collectForm').addEventListener('submit', async e=>{e.preventDefault();const btn=document.getElementById('collectBtn');btn.disabled=true;const out=document.getElementById('collectResult');out.replaceChildren();try{const {response,data}=await request('/api/articles/collect/','POST',{url:document.getElementById('url').value.trim()});if(response.status===202)out.append(podcastCard(data));else if(data.success)out.append(articleResult(data.article));else out.append(text('div',data.message || '收藏失败','alert alert-danger'));}catch(_){out.append(text('div','网络错误，请稍后重试。','alert alert-danger'));}finally{btn.disabled=false;}});
+  document.getElementById('batchBtn').addEventListener('click',async()=>{const urls=document.getElementById('batchUrls').value.split('\n').map(x=>x.trim()).filter(Boolean);const out=document.getElementById('batchResult');out.replaceChildren();if(!urls.length)return;try{const {data}=await request('/api/articles/collect_batch/','POST',{urls});for(const result of data.results){if(result.task)out.append(podcastCard(result.task));else out.append(text('div',`${result.url}：${result.message}`,'small'));}}catch(_){out.append(text('div','网络错误，请稍后重试。','alert alert-danger'));}});
+  window.addEventListener('pagehide',()=>activePollers.forEach(stop=>stop()));
+})();
+</script>
 {% endblock %}

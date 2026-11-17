@@ -1,0 +1,15 @@
+[Unit]
+Description=Umeikou Service Monitor
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/usr/Project/article_collection_django
+ExecStart=/usr/Project/article_collection_django/monitor_service.sh monitor
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

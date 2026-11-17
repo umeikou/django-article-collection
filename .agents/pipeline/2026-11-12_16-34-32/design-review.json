@@ -1,0 +1,37 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "number": 1,
+      "severity": "MEDIUM",
+      "title": "ASR submit 429 的安全重试缺少 attempt 状态转换",
+      "where": "Worker、租约、轮询、重试、取消和清理中的 ASR retry；ASR 调用协议和不确定提交恢复中的计费闸门",
+      "problem": "计费闸门先将唯一 PodcastAsrAttempt 写成 submitting，后续闸门又禁止存在 submitting/uncertain attempt 时再次 submit。设计把已确认未接受的 HTTP 429 说成可退避重试，却没有规定将同一 attempt 复位为 not_started、设置 next_attempt_at 或记录实际 spawn 次数。任务会在重试后永久被闸门阻止，或迫使实现者违规创建新 attempt。",
+      "fix": "定义 owner-guarded 的 429 转换：同一 attempt submitting -> not_started；task -> pending/asr_submit；递增 retry_count 和 work_attempt_number；next_attempt_at=backoff；清 lease 并写脱敏限流事件。定义自动次数耗尽后的 failed/is_retryable=true 行为，并测试 429 后可重新 submit；timeout 和未知 nonzero 仍必须进入 uncertain。"
+    },
+    {
+      "number": 2,
+      "severity": "MEDIUM",
+      "title": "播客提交强制登录属于未要求的 API 语义收缩",
+      "where": "提交分流、URL 验证和访问控制中 collect() 的 request.user.is_authenticated 规则",
+      "problem": "需求和验收标准要求合法小宇宙 POST 持久化任务并返回 202，但没有认证前提。现有 ArticleViewSet 也没有 permission class，普通 API 收藏匿名可用。设计新增 401 会使匿名 API 用户不能提交合法播客，未保持既有入口的兼容语义。",
+      "fix": "移除播客分流的强制登录。若必须保护 task detail/retry/cancel，创建时签发随机 capability token、数据库只保存其哈希，并要求 detail/events/retry/cancel 带该 token 或是已登录 owner/staff。若产品确实要登录，应先把此限制加入需求和验收标准。"
+    },
+    {
+      "number": 3,
+      "severity": "MEDIUM",
+      "title": "历史 Article 的 canonical URL 去重算法未定义",
+      "where": "提交分流、URL 验证和访问控制中 normalizer 比较已有 Article.url；PodcastSubmissionService.submit()",
+      "problem": "当前 Article 只保存原始 URL，现有 serializer 也按原始字符串查重。设计把 URL 规范化，但没有 canonical 字段、历史回填或受限候选查询流程，无法保证发现 HTTP、无 www、query 或 fragment 形式的历史单集。漏检可能在 ASR 处理后才发现已有 Article。",
+      "fix": "推荐新增带索引的可空 Article.podcast_url_key，并在迁移中仅回填可规范化的小宇宙旧 URL；提交时在短事务按该 key 查重。替代方案必须明确定义受限候选查询、逐项 normalise 和最终 Article 的原子复核。测试所有历史 URL 形式都不会创建任务或调用 ASR。"
+    },
+    {
+      "number": 4,
+      "severity": "MEDIUM",
+      "title": "AI 未派发失败的 item/task 状态和恢复规则不完整",
+      "where": "文字稿、全量分析、AI 不确定调用和 Article 完成中的 generate_or_raise 错误分类；API retry 恢复规则",
+      "problem": "设计保护了已进入网络的不确定 AI 调用，但没有定义 AI 禁用、凭据缺失、输入本地校验失败或明确未派发限流时的 item 状态、task 状态、is_retryable、next_action 和 retry reset。retry 仅接受 failed && is_retryable；未定义如何将失败 chunk/rollup 重置 pending，可能使文字稿保留后没有可用恢复路径。",
+      "fix": "增加错误矩阵：未派发的配置/凭据失败设 item=failed、task=failed、is_retryable=true，并在配置修复后由 retry 将仅失败 item 设回 pending；明确未派发限流保留 pending 并设置 backoff；可能已派发的 timeout/5xx/lease loss 进入 uncertain/needs_attention，仅 staff reconcile 重派。分别覆盖 leaf 与 rollup 测试。"
+    }
+  ]
+}

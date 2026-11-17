@@ -1,0 +1,104 @@
+{% extends 'articles/subscription/base.html' %}
+
+{% block admin_content %}
+{% if message %}
+<div class="alert alert-{{ message.type }} alert-dismissible fade show" role="alert">
+    {{ message.text }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-gear"></i> 发送时间配置
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">发送星期</label>
+                <div class="col-sm-9">
+                    <select name="weekday" class="form-select" style="max-width: 200px;">
+                        {% for value, label in weekday_choices %}
+                        <option value="{{ value }}" {% if config.send_weekday == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">发送时间</label>
+                <div class="col-sm-9">
+                    <div class="d-flex align-items-center gap-2" style="max-width: 300px;">
+                        <select name="hour" class="form-select">
+                            {% for h in "0123456789101112131415161718192021222324"|make_list %}
+                            {% with hour=forloop.counter0 %}
+                            <option value="{{ hour }}" {% if config.send_hour == hour %}selected{% endif %}>
+                                {{ hour|stringformat:"02d" }}
+                            </option>
+                            {% endwith %}
+                            {% endfor %}
+                        </select>
+                        <span>:</span>
+                        <select name="minute" class="form-select">
+                            <option value="0" {% if config.send_minute == 0 %}selected{% endif %}>00</option>
+                            <option value="15" {% if config.send_minute == 15 %}selected{% endif %}>15</option>
+                            <option value="30" {% if config.send_minute == 30 %}selected{% endif %}>30</option>
+                            <option value="45" {% if config.send_minute == 45 %}selected{% endif %}>45</option>
+                        </select>
+                    </div>
+                    <small class="text-muted">选择每周发送邮件的具体时间</small>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">启用状态</label>
+                <div class="col-sm-9">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_enabled" id="isEnabled"
+                               {% if config.is_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="isEnabled">
+                            启用自动发送
+                        </label>
+                    </div>
+                    <small class="text-muted">关闭后将不会自动发送周刊邮件</small>
+                </div>
+            </div>
+            
+            {% if config.last_sent_at %}
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">上次发送</label>
+                <div class="col-sm-9">
+                    <p class="form-control-plaintext">{{ config.last_sent_at|date:"Y-m-d H:i:s" }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <div class="col-sm-9 offset-sm-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> 保存配置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-info-circle"></i> 配置说明
+    </div>
+    <div class="card-body">
+        <ul class="mb-0">
+            <li>系统将在设定的时间自动发送最新的周阅读合集给所有订阅者</li>
+            <li>建议选择周末时间发送，如周日上午</li>
+            <li>如果当周没有新的周刊，将不会发送邮件</li>
+            <li>发送记录可在数据看板中查看</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

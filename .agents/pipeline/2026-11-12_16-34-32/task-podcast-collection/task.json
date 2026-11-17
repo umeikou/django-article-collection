@@ -1,0 +1,7 @@
+{
+  "task_id": "task-podcast-collection",
+  "task_description": "Add authenticated, asynchronous Xiaoyuzhou episode collection with paid/private rejection, AuralWise transcription, full-transcript DeepSeek analysis, progress APIs/UI, and safe worker operations.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

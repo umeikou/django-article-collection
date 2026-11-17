@@ -1,0 +1,49 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}订阅确认 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="liquid-glass-panel" style="padding: 3rem 2rem; border-radius: 12px; text-align: center; margin-top: 3rem;">
+            {% if success %}
+                <div style="margin-bottom: 1.5rem;">
+                    <i class="bi bi-check-circle" style="font-size: 3.5rem; color: var(--success-color, #10b981);"></i>
+                </div>
+                <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">订阅已激活</h2>
+                <p style="margin: 0 0 24px 0; color: var(--text-secondary); font-size: 15px; line-height: 1.7;">
+                    {% if email %}
+                        感谢确认。{{ email }} 已经加入订阅列表,
+                    {% else %}
+                        感谢确认。您已加入订阅列表,
+                    {% endif %}
+                    您将在每周固定时间收到一份精选阅读。
+                </p>
+
+                <div style="text-align: left; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+                    <h6 style="margin: 0 0 12px 0; font-size: 12px; letter-spacing: 0.06em; color: var(--text-secondary); text-transform: uppercase;">接下来可以</h6>
+                    <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.8;">
+                        <li>浏览历次周报合集 · <a href="{% url 'articles:weekly_list' %}">阅读分享</a></li>
+                        <li>查看完整文章列表与 AI 摘要 · <a href="{% url 'articles:list' %}">文章库</a></li>
+                    </ul>
+                </div>
+
+                <a href="{% url 'articles:index' %}" class="btn btn-accent">
+                    <i class="bi bi-house"></i> 返回首页
+                </a>
+            {% else %}
+                <div style="margin-bottom: 1.5rem;">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3.5rem; color: var(--text-secondary);"></i>
+                </div>
+                <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">无法激活</h2>
+                <p style="margin: 0 0 24px 0; color: var(--text-secondary); font-size: 15px; line-height: 1.7;">
+                    {{ message }}
+                </p>
+                <a href="{% url 'articles:index' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left"></i> 返回首页重新订阅
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

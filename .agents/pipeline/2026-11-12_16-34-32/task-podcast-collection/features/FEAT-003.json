@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Expose the completed podcast workflow through authenticated DRF endpoints, safe progress UI, redacted admin diagnostics, and an un-deployed operational runbook. This feature depends on FEAT-002 services and must preserve ordinary article API/UI behavior.",
+  "status": "pending",
+  "steps": [
+    "Update /usr/Project/article_collection_django/articles/serializers.py to use 2048-character collection URLs, recognize canonical podcast submissions without applying the old Article duplicate check first, and define safe podcast task/event/action serializers that exclude all private external-processing fields.",
+    "Update /usr/Project/article_collection_django/articles/views.py and articles/urls.py: branch ArticleViewSet.collect and collect_batch to PodcastSubmissionService after serializer validation, require login only for valid podcast collection, preserve regular synchronous responses, protect active podcast Article deletion atomically, scope podcast task list/detail to owner or staff, and add events/retry/cancel/staff reconcile actions with strict state and body validation.",
+    "Make only required compatibility changes to /usr/Project/article_collection_django/articles/services.py so ordinary task rows explicitly retain article defaults and batch routing remains compatible; do not refactor ArticleParserService or ordinary collection implementation.",
+    "Revise /usr/Project/article_collection_django/templates/articles/collect.html to post the single form as CSRF JSON fetch, render ordinary 201 success and podcast 202 cards, handle podcast batch results, poll a task URL every five seconds with network backoff, stop on all terminal states/pagehide, and create every dynamic server-data node with DOM APIs/textContent rather than innerHTML.",
+    "Add scoped Xiaoyuzhou badge and podcast progress-card styles to /usr/Project/article_collection_django/static/css/style.css.",
+    "Expand /usr/Project/article_collection_django/articles/admin.py with readonly/redacted podcast models, safe event inline/task status fields, and staff reconcile actions that call the same service validation and write actor audit events. Exclude audio URL, ASR ID, temporary paths, provider data, headers, and credentials from all list/detail/inline/string representations.",
+    "Create /usr/Project/article_collection_django/podcast-collection-worker.service and PODCAST_WORKER.md. The unit must be a single nginx production-settings worker with specified systemd hardening and no secret; the runbook must describe secure script placement and env variable names, SQLite single-worker limit, migrations, lifecycle, lease/cancel/reconcile recovery, and cleanup but must not run deployment commands.",
+    "Extend articles/test_podcast_collection.py with API/UI/admin tests covering anonymous podcast 401 versus unchanged anonymous normal URL behavior, safe 202 response, owner/staff task access and 404 isolation, retry/cancel/reconcile constraints, event order, deletion protection, rendering/poll terminal behavior, and redaction."
+  ],
+  "acceptance_criteria": [
+    "Authenticated valid podcast submissions return only safe 202 task fields, while invalid/non-podcast URLs preserve existing validation and synchronous ArticleCollectionService behavior.",
+    "Podcast task status/events are visible only to the owner or staff; retry/cancel/reconcile cannot bypass state, ownership, staff, lease, or uncertainty requirements.",
+    "The collection page shows task stage/progress/event/cost/article link, uses allow flags for actions, and stops polling at success, failed, rejected, cancelled, needs_attention, or pagehide without injecting API values as HTML.",
+    "Admin, APIs, events, logs asserted by tests, systemd template, and documentation do not expose credentials or private ASR/audio/provider/temporary-path data."
+  ],
+  "verification": [
+    "python3 manage.py makemigrations --check --dry-run",
+    "python3 manage.py migrate --plan",
+    "python3 manage.py check",
+    "python3 manage.py check --settings=article_collection_django.settings_production",
+    "python3 manage.py test articles.test_podcast_collection",
+    "python3 manage.py test"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

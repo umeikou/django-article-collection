@@ -1,0 +1,57 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}退订 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="liquid-glass-panel" style="padding: 3rem 2rem; border-radius: 12px; text-align: center; margin-top: 3rem;">
+            {% if success is not None %}
+                {% if success %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <i class="bi bi-check-circle" style="font-size: 3.5rem; color: var(--success-color, #10b981);"></i>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">退订成功</h2>
+                    <p style="margin: 0 0 12px 0; color: var(--text-secondary); font-size: 15px;">{{ email }} 已成功退订</p>
+                    <p style="margin: 0 0 28px 0; color: var(--text-secondary); font-size: 14px;">感谢您曾经的关注,期待再次相遇。</p>
+                    <a href="{% url 'articles:index' %}" class="btn btn-outline-accent">
+                        <i class="bi bi-arrow-left"></i> 返回首页
+                    </a>
+                {% else %}
+                    <div style="margin-bottom: 1.5rem;">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 3.5rem; color: var(--text-secondary);"></i>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">退订失败</h2>
+                    <p style="margin: 0 0 28px 0; color: var(--text-secondary); font-size: 15px;">{{ message }}</p>
+                    <a href="{% url 'articles:index' %}" class="btn btn-outline-accent">
+                        <i class="bi bi-arrow-left"></i> 返回首页
+                    </a>
+                {% endif %}
+            {% elif email %}
+                <div style="margin-bottom: 1.5rem;">
+                    <i class="bi bi-envelope-x" style="font-size: 3.5rem; color: var(--text-secondary);"></i>
+                </div>
+                <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">确认退订</h2>
+                <p style="margin: 0 0 8px 0; color: var(--text-secondary); font-size: 15px;">您确定要退订 {{ email }} 吗?</p>
+                <p style="margin: 0 0 28px 0; color: var(--text-secondary); font-size: 14px;">退订后将不再收到周阅读分享邮件。</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> 确认退订
+                    </button>
+                    <a href="{% url 'articles:index' %}" class="btn btn-outline-secondary ms-2">取消</a>
+                </form>
+            {% else %}
+                <div style="margin-bottom: 1.5rem;">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3.5rem; color: var(--text-secondary);"></i>
+                </div>
+                <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 600;">链接无效</h2>
+                <p style="margin: 0 0 28px 0; color: var(--text-secondary); font-size: 15px;">{{ message|default:"退订链接无效或已过期" }}</p>
+                <a href="{% url 'articles:index' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left"></i> 返回首页
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

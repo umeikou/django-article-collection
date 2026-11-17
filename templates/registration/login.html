@@ -1,0 +1,93 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}登录 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="login-panel">
+            <div class="text-center mb-4">
+                <h3><i class="bi bi-person-circle"></i> 用户登录</h3>
+                <p class="text-muted">登录后可进行文章收藏和管理操作</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="username" class="form-label">用户名</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-person"></i>
+                        </span>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">密码</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-lock"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-accent w-100 mb-3">
+                    <i class="bi bi-box-arrow-in-right"></i> 登录
+                </button>
+            </form>
+            
+            <div class="text-center">
+                <a href="{% url 'articles:index' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> 返回首页
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.login-panel {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 60px;
+}
+
+.login-form .input-group-text {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.login-form .form-control {
+    border-left: none;
+}
+
+.login-form .form-control:focus {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+    .login-panel {
+        margin: 20px;
+        padding: 30px;
+    }
+}
+</style>
+{% endblock %}

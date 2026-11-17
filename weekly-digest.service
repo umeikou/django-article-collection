@@ -1,0 +1,16 @@
+[Unit]
+Description=Weekly Reading Digest Generator
+After=network.target
+
+[Service]
+Type=oneshot
+User=nginx
+Group=nginx
+WorkingDirectory=/usr/Project/article_collection_django
+Environment=DJANGO_SETTINGS_MODULE=article_collection_django.settings_production
+ExecStart=/usr/bin/python3 manage.py create_weekly_digest
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

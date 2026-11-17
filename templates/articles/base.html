@@ -1,65 +1,310 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}文章收藏系统{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <title>{% block title %}于明浩的文章·播客列表{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/favicon.png' %}">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260524c">
+    {% block styles %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg liquid-glass sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'articles:index' %}">
-                <i class="bi bi-bookmark-fill"></i> 文章收藏系统
+                于明浩的阅读·收听列表
             </a>
+            
+            <!-- 移动端：订阅按钮常驻导航栏，折叠菜单外 -->
+            <button type="button" class="btn btn-accent btn-sm nav-subscribe-btn-mobile d-lg-none"
+                    data-bs-toggle="modal" data-bs-target="#subscribeModal">
+                订阅
+            </button>
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'articles:index' %}">
-                            <i class="bi bi-house"></i> 首页
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
+                           href="{% url 'articles:index' %}">
+                            <i class="bi bi-house"></i> 统计
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'articles:list' %}">
-                            <i class="bi bi-list"></i> 文章列表
+                        <a class="nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}" 
+                           href="{% url 'articles:list' %}">
+                            <i class="bi bi-collection"></i> 文章库
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'articles:collect' %}">
-                            <i class="bi bi-plus-circle"></i> 收藏文章
+                        <a class="nav-link {% if 'weekly' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'articles:weekly_list' %}">
+                            <i class="bi bi-calendar-week"></i> 阅读分享
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/" target="_blank">
-                            <i class="bi bi-gear"></i> 管理后台
+                        {% if user.is_authenticated %}
+                            <a class="nav-link {% if request.resolver_match.url_name == 'collect' %}active{% endif %}"
+                               href="{% url 'articles:collect' %}">
+                                <i class="bi bi-plus-circle"></i> 收藏文章
+                            </a>
+                        {% else %}
+                            <a class="nav-link" href="{% url 'articles:login' %}">
+                                <i class="bi bi-plus-circle"></i> 收藏文章
+                            </a>
+                        {% endif %}
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'changelog' %}active{% endif %}"
+                           href="{% url 'articles:changelog' %}">
+                            <i class="bi bi-journal-text"></i> 更新记录
                         </a>
                     </li>
+                </ul>
+                
+                <!-- 用户登录状态 -->
+                <ul class="navbar-nav align-items-lg-center">
+                    <li class="nav-item me-lg-2 d-none d-lg-block">
+                        <button type="button" class="btn btn-accent btn-sm nav-subscribe-btn"
+                                data-bs-toggle="modal" data-bs-target="#subscribeModal">
+                            <i class="bi bi-envelope-heart"></i>
+                            <span>订阅</span>
+                        </button>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'articles:subscription_admin' %}">
+                                        <i class="bi bi-envelope-paper"></i> 订阅管理
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'articles:logout' %}">
+                                        <i class="bi bi-box-arrow-right"></i> 登出
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'articles:login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i> 登录
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <main class="container mt-4">
-        {% block content %}
-        {% endblock %}
-    </main>
+    <!-- 主要内容区域 -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="{% block content_col_class %}col-12{% endblock %}">
+                {% block content %}{% endblock %}
+            </div>
+            {% block sidebar %}{% endblock %}
+        </div>
+    </div>
 
-    <footer class="bg-light mt-5 py-4">
+    <!-- 页脚 -->
+    <footer class="mt-5 py-4" style="background: transparent;">
         <div class="container text-center">
-            <p class="text-muted mb-0">
-                <i class="bi bi-bookmark"></i> 文章收藏系统 - 聚合收藏多平台文章
+            <p class="text-muted mb-0" style="font-size: 0.875rem;">
+                于明浩的阅读·收听列表
             </p>
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}
-    {% endblock %}
+    <!-- 订阅 Modal -->
+    <div class="modal fade" id="subscribeModal" tabindex="-1" aria-labelledby="subscribeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="subscribeModalLabel">
+                        <i class="bi bi-envelope-heart" style="color: var(--accent-color);"></i>
+                        订阅每周阅读
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="subscription-subtitle mb-3">每周收到一份精选阅读 · 随时退订</p>
+                    {% include 'articles/_subscription_form.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 移动端底部固定订阅栏 -->
+    <div class="mobile-subscribe-bar d-lg-none" id="mobileSubscribeBar">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <div class="mobile-subscribe-bar-copy">
+                    <div class="mobile-subscribe-bar-title">每周精选阅读</div>
+                    <div class="mobile-subscribe-bar-sub">周一早上收到 · 随时退订</div>
+                </div>
+                <button class="btn btn-accent btn-sm mobile-subscribe-bar-btn flex-shrink-0"
+                        data-bs-toggle="modal" data-bs-target="#subscribeModal">
+                    免费订阅
+                </button>
+            </div>
+        </div>
+        <button class="mobile-subscribe-bar-close" id="mobileSubscribeBarClose" aria-label="关闭">
+            <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    <!-- 订阅表单交互 — 同时绑定页面上所有订阅 form (sidebar + modal) -->
+    <script>
+    (function() {
+        const CAPTCHA_URL = "{% url 'articles:get_captcha' %}";
+        const SUBSCRIBE_URL = "{% url 'articles:subscribe' %}";
+        const CSRF_TOKEN = "{{ csrf_token }}";
+
+        function validateEmail(email) {
+            return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+        }
+
+        function initForm(form) {
+            if (form.dataset.bound === '1') return;
+            form.dataset.bound = '1';
+
+            const emailInput = form.querySelector('.js-subscribe-email');
+            const emailError = form.querySelector('.js-subscribe-email-error');
+            const captchaQuestion = form.querySelector('.js-subscribe-captcha-question');
+            const captchaAnswer = form.querySelector('.js-subscribe-captcha-answer');
+            const captchaId = form.querySelector('.js-subscribe-captcha-id');
+            const refreshBtn = form.querySelector('.js-subscribe-refresh');
+            const submitBtn = form.querySelector('.js-subscribe-submit');
+            // 消息 div 在 form 兄弟节点上
+            const messageDiv = form.parentElement.querySelector('.js-subscribe-message');
+
+            function loadCaptcha() {
+                fetch(CAPTCHA_URL)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            captchaQuestion.textContent = data.question;
+                            captchaId.value = data.captcha_id;
+                            captchaAnswer.value = '';
+                        }
+                    })
+                    .catch(() => { captchaQuestion.textContent = '加载失败,请刷新'; });
+            }
+
+            function showMessage(text, isSuccess) {
+                if (!messageDiv) return;
+                messageDiv.textContent = text;
+                messageDiv.className = 'subscription-message mt-2 js-subscribe-message ' + (isSuccess ? 'text-success' : 'text-danger');
+                messageDiv.style.display = 'block';
+                setTimeout(() => { messageDiv.style.display = 'none'; }, 6000);
+            }
+
+            loadCaptcha();
+            refreshBtn.addEventListener('click', loadCaptcha);
+
+            emailInput.addEventListener('blur', function() {
+                if (this.value && !validateEmail(this.value)) {
+                    this.classList.add('is-invalid');
+                    emailError.textContent = '请输入正确的邮箱格式';
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = emailInput.value.trim();
+                const answer = captchaAnswer.value.trim();
+
+                if (!validateEmail(email)) {
+                    emailInput.classList.add('is-invalid');
+                    emailError.textContent = '请输入正确的邮箱格式';
+                    return;
+                }
+                if (!answer) {
+                    showMessage('请完成人机验证', false);
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 处理中...';
+
+                fetch(SUBSCRIBE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+                    body: JSON.stringify({
+                        email: email,
+                        captcha_id: captchaId.value,
+                        captcha_answer: answer
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.next_url) {
+                        window.location.href = data.next_url;
+                        return;
+                    }
+                    showMessage(data.message, data.success);
+                    if (data.success) {
+                        emailInput.value = '';
+                        captchaAnswer.value = '';
+                    }
+                    loadCaptcha();
+                })
+                .catch(() => { showMessage('网络错误,请稍后重试', false); })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-envelope-plus"></i> 订阅';
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.js-subscribe-form').forEach(initForm);
+
+            // 底部固定栏关闭
+            const bar = document.getElementById('mobileSubscribeBar');
+            const closeBtn = document.getElementById('mobileSubscribeBarClose');
+            if (closeBtn && bar) {
+                closeBtn.addEventListener('click', function() {
+                    bar.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+                    bar.style.opacity = '0';
+                    bar.style.transform = 'translateY(100%)';
+                    setTimeout(() => { bar.style.display = 'none'; }, 230);
+                    try { sessionStorage.setItem('subBarDismissed', '1'); } catch(e) {}
+                });
+                // 本次会话内关闭过则不再显示
+                try {
+                    if (sessionStorage.getItem('subBarDismissed') === '1') {
+                        bar.style.display = 'none';
+                    }
+                } catch(e) {}
+            }
+        });
+    })();
+    </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,118 +1,191 @@
 {% extends 'articles/base.html' %}
 
-{% block title %}首页 - 文章收藏系统{% endblock %}
+{% block title %}统计概览 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content_col_class %}col-lg-8{% endblock %}
+
+{% block sidebar %}
+<div class="col-lg-4">
+    {% include 'articles/_sidebar.html' %}
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-graph-up"></i> 收藏统计
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <h2 class="text-primary">{{ total_articles }}</h2>
-                            <p class="text-muted">总文章数</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>按平台分布：</h6>
-                        {% for stat in platform_stats %}
-                        <div class="d-flex justify-content-between">
-                            <span>
-                                {% for choice in platform_choices %}
-                                    {% if choice.0 == stat.platform %}
-                                        {{ choice.1 }}
-                                    {% endif %}
-                                {% endfor %}
-                            </span>
-                            <span class="badge bg-secondary">{{ stat.count }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-clock"></i> 最新收藏
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if recent_articles %}
-                    {% for article in recent_articles %}
-                    <div class="border-bottom pb-2 mb-2">
-                        <h6 class="mb-1">
-                            <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
-                                {{ article.title|default:"无标题" }}
-                            </a>
-                        </h6>
-                        <small class="text-muted">
-                            <span class="badge bg-info">
-                                {% for choice in platform_choices %}
-                                    {% if choice.0 == article.platform %}
-                                        {{ choice.1 }}
-                                    {% endif %}
-                                {% endfor %}
-                            </span>
-                            {% if article.author %}
-                                by {{ article.author }}
-                            {% endif %}
-                            - {{ article.collected_at|date:"Y-m-d H:i" }}
-                        </small>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">暂无文章</p>
-                {% endif %}
-            </div>
+<!-- 欢迎区域 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="liquid-glass-panel" style="padding: 2.25rem 2rem; border-radius: 12px;">
+            <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500;">
+                文章收藏总数
+            </p>
+            <div class="stats-number">{{ total_articles }}</div>
+            <p style="margin: 0.75rem 0 0 0; color: var(--text-secondary); font-size: 14px;">
+                精选阅读 · 每周汇总
+            </p>
         </div>
     </div>
+</div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-lightning"></i> 快速操作
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{% url 'articles:collect' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> 收藏文章
-                    </a>
-                    <a href="{% url 'articles:list' %}" class="btn btn-outline-primary">
-                        <i class="bi bi-list"></i> 浏览文章
-                    </a>
-                    <a href="/api/articles/" class="btn btn-outline-secondary" target="_blank">
-                        <i class="bi bi-code"></i> API 接口
-                    </a>
+<!-- 平台统计 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 style="margin: 8px 0 16px 0; font-family: var(--font-serif); font-size: 20px; font-weight: 500; letter-spacing: -0.005em;">平台分布</h3>
+        <div class="row g-3">
+            {% for stat in platform_stats %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="liquid-glass-panel" style="padding: 1rem; border-radius: 8px; text-align: center;">
+                    <span class="platform-badge mb-2 d-block">
+                        {% for choice in platform_choices %}
+                            {% if choice.0 == stat.platform %}
+                                {{ choice.1 }}
+                            {% endif %}
+                        {% endfor %}
+                    </span>
+                    <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">
+                        {{ stat.count }}
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
+    </div>
+</div>
 
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-info-circle"></i> 支持平台
-                </h5>
+<!-- 最新收藏 -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 style="margin: 0; font-family: var(--font-serif); font-size: 20px; font-weight: 500; letter-spacing: -0.005em;">最新收藏</h3>
+            <a href="{% url 'articles:list' %}" class="btn btn-outline-accent btn-sm">
+                查看全部 <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        
+        {% if recent_articles %}
+            <div class="d-flex flex-column gap-3">
+                {% for article in recent_articles %}
+                <div class="article-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="platform-badge">
+                            {% for choice in platform_choices %}
+                                {% if choice.0 == article.platform %}
+                                    {{ choice.1 }}
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        <small class="text-muted">{{ article.collected_at|date:"m-d H:i" }}</small>
+                    </div>
+                    
+                    <h4 class="article-title">
+                        <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                            {{ article.title|default:"无标题"|truncatechars:60 }}
+                        </a>
+                    </h4>
+                    
+                    {% if article.ai_key_point %}
+                    <div class="ai-key-point">
+                        <div class="ai-key-point-label">
+                            <i class="bi bi-stars"></i> AI 核心观点
+                        </div>
+                        <div class="ai-key-point-content">{{ article.ai_key_point }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if article.ai_summary %}
+                    <p class="article-summary">
+                        {{ article.ai_summary|truncatechars:150 }}
+                    </p>
+                    {% elif article.content %}
+                    <p class="article-summary">
+                        {{ article.content|truncatechars:120 }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="article-meta">
+                        <div>
+                            {% if article.author %}
+                                <span>{{ article.author }}</span>
+                                <span>•</span>
+                            {% endif %}
+                            <span>{{ article.collected_at|date:"Y-m-d" }}</span>
+                        </div>
+                        <a href="{{ article.url }}" target="_blank" 
+                           class="text-decoration-none d-flex align-items-center gap-1"
+                           style="color: var(--text-primary); font-weight: 500;">
+                            阅读 <i class="bi bi-box-arrow-up-right" style="font-size: 12px;"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><i class="bi bi-check-circle text-success"></i> 微信公众号</li>
-                    <li><i class="bi bi-check-circle text-success"></i> 小红书</li>
-                    <li><i class="bi bi-check-circle text-success"></i> 即刻</li>
-                    <li><i class="bi bi-check-circle text-success"></i> 知乎</li>
-                    <li><i class="bi bi-check-circle text-success"></i> 掘金</li>
-                    <li><i class="bi bi-check-circle text-success"></i> CSDN</li>
-                    <li><i class="bi bi-check-circle text-success"></i> 其他网站</li>
-                </ul>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h5>还没有收藏任何文章</h5>
+                <p>开始收藏你的第一篇文章吧！</p>
+                <a href="{% url 'articles:collect' %}" class="btn btn-accent">
+                    <i class="bi bi-plus-lg"></i> 立即收藏
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="col-lg-4">
+        <!-- 快速操作 -->
+        <div class="liquid-glass-panel mb-4" style="padding: 1.5rem; border-radius: 8px;">
+            <h5 style="margin: 0 0 1rem 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="bi bi-lightning-fill" style="color: var(--text-primary);"></i> 快速操作
+            </h5>
+            <div class="d-grid gap-2">
+                <a href="{% url 'articles:collect' %}" class="btn btn-accent">
+                    <i class="bi bi-plus-lg"></i> 收藏文章
+                </a>
+                <a href="{% url 'articles:list' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-collection"></i> 浏览文章库
+                </a>
+                <a href="/api/articles/" class="btn btn-outline-secondary" target="_blank">
+                    <i class="bi bi-code-slash"></i> API 接口
+                </a>
+            </div>
+        </div>
+        
+        <!-- 支持平台 -->
+        <div class="liquid-glass-panel" style="padding: 1.5rem; border-radius: 8px;">
+            <h5 style="margin: 0 0 1rem 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="bi bi-globe" style="color: var(--text-primary);"></i> 支持平台
+            </h5>
+            <div class="d-flex flex-column gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">微信公众号</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">知乎问答</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">小红书</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">即刻动态</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">掘金技术</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">CSDN博客</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill" style="color: var(--text-primary); font-size: 12px;"></i>
+                    <span style="font-size: 13px; color: var(--text-secondary);">其他网站</span>
+                </div>
             </div>
         </div>
     </div>

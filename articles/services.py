@@ -5,7 +5,11 @@
 import requests
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
+import logging
 from .models import Article, CollectionTask
+from .ai_service import get_ai_service
+
+logger = logging.getLogger(__name__)
 
 
 class ArticleParserService:
@@ -296,8 +300,14 @@ class ArticleCollectionService:
     def __init__(self):
         self.parser = ArticleParserService()
     
-    def collect_article(self, url: str) -> tuple[bool, str, Optional[Article]]:
-        """收藏单篇文章"""
+    def collect_article(self, url: str, enable_ai: bool = True) -> tuple[bool, str, Optional[Article]]:
+        """
+        收藏单篇文章
+        
+        Args:
+            url: 文章URL
+            enable_ai: 是否启用AI分析（默认启用）
+        """
         # 检查是否已存在
         if Article.objects.filter(url=url).exists():
             article = Article.objects.get(url=url)
@@ -316,6 +326,28 @@ class ArticleCollectionService:
                 task.save()
                 return False, f"解析失败: {article_data['error']}", None
             
+            # AI分析（如果启用且有内容）
+            ai_summary = ''
+            ai_key_point = ''
+            
+            if enable_ai and article_data.get('content'):
+                logger.info(f"开始AI分析文章: {article_data.get('title', 'Unknown')}")
+                try:
+                    ai_service = get_ai_service()
+                    if ai_service.is_available():
+                        ai_result = ai_service.analyze_article(
+                            content=article_data.get('content', ''),
+                            title=article_data.get('title', '')
+                        )
+                        ai_summary = ai_result.get('summary', '')
+                        ai_key_point = ai_result.get('key_point', '')
+                        logger.info(f"AI分析完成: 核心观点={ai_key_point[:50]}...")
+                    else:
+                        logger.warning("AI服务不可用，跳过AI分析")
+                except Exception as e:
+                    logger.error(f"AI分析失败: {str(e)}")
+                    # AI分析失败不影响文章收藏
+            
             # 保存文章
             article = Article.objects.create(
                 url=article_data['url'],
@@ -323,7 +355,9 @@ class ArticleCollectionService:
                 content=article_data.get('content'),
                 author=article_data.get('author'),
                 publish_time=article_data.get('publish_time'),
-                platform=article_data.get('platform')
+                platform=article_data.get('platform'),
+                ai_summary=ai_summary,
+                ai_key_point=ai_key_point
             )
             
             task.status = 'success'

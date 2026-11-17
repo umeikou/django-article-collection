@@ -1,0 +1,28 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create the durable podcast task schema and pure submission/metadata security boundary that later worker and HTTP features consume. This feature leaves normal ArticleCollectionService collection behavior intact.",
+  "status": "pending",
+  "steps": [
+    "Extend Article and CollectionTask in /usr/Project/article_collection_django/articles/models.py: add xiaoyuzhou, widen URL fields to 2048, make CollectionTask.article SET_NULL, add task type/owner/progress/error/retry/lease/cancel/URL-lock/billing fields and status choices, indexes, and the active podcast conditional URL-key constraint.",
+    "Add PodcastEpisode, PodcastTaskEvent, PodcastAsrAttempt, PodcastTranscriptSegment, PodcastAnalysisChunk, and PodcastAnalysisRollup models with the exact one-to-one/FK deletion policies, audit fields, uniqueness constraints, private-field boundaries, and no persisted provider JSON or audio archive.",
+    "Create /usr/Project/article_collection_django/articles/migrations/0007_podcast_collection.py dependent on 0006_weeklydigest_stat. It must backfill existing article tasks safely and only add/alter schema, constraints, and indexes without rewriting existing Article, weekly digest, or subscriber data.",
+    "Create /usr/Project/article_collection_django/articles/podcast.py with normalize_xiaoyuzhou_episode_url, PodcastSubmissionService, safe event/state helpers, and PodcastMetadataService.normalize_and_validate. Submission must be short-transaction-only, canonicalize accepted episodes, preserve the active URL lock under race, apply owner/staff visibility semantics, and create task/Episode/first event without external I/O.",
+    "Create /usr/Project/article_collection_django/articles/podcast_metadata_adapter.py as a safe CLI adapter: import the configured fetch_episode.py parse() with importlib, emit exactly one compact whitelisted JSON object, and map adapter errors without echoing external data or exceptions.",
+    "Create /usr/Project/article_collection_django/articles/test_podcast_collection.py with TestCase and migration-executor coverage for model defaults/relations/constraint, URL normalization, submission duplicate/race behavior, metadata normalization, and adapter output/error boundaries."
+  ],
+  "acceptance_criteria": [
+    "Migration from 0006 safely maps historical CollectionTask rows to article defaults and keeps existing data relations valid.",
+    "Exactly one active task can hold a canonical episode URL, historical Article duplicates are rejected, same owner/staff can retrieve its task, and other users receive only a generic conflict.",
+    "Only an exact http(s) xiaoyuzhoufm.com or www.xiaoyuzhoufm.com /episode/<1-200 [A-Za-z0-9_-]> URL becomes the canonical HTTPS www URL; all other values remain outside the podcast pipeline.",
+    "Paid, private, malformed, or unsafe metadata cannot be mistaken for free playable content, and adapter failures do not expose URL, body, exception, or credential data."
+  ],
+  "verification": [
+    "python3 manage.py makemigrations --check --dry-run",
+    "python3 manage.py migrate --plan",
+    "python3 manage.py test articles.test_podcast_collection",
+    "python3 manage.py check"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

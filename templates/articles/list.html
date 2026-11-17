@@ -1,145 +1,326 @@
 {% extends 'articles/base.html' %}
 
-{% block title %}文章列表 - 文章收藏系统{% endblock %}
+{% block title %}文章库 · 于明浩的文章·播客列表{% endblock %}
 
 {% block content %}
-<div class="row">
+<!-- 搜索和筛选区域 -->
+<div class="row mb-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-list"></i> 文章列表
-                        </h5>
-                    </div>
-                    <div class="col-md-6">
-                        <form method="get" class="d-flex">
-                            <select name="platform" class="form-select me-2">
-                                <option value="">全部平台</option>
-                                {% for choice in platform_choices %}
-                                    <option value="{{ choice.0 }}" {% if current_platform == choice.0 %}selected{% endif %}>
-                                        {{ choice.1 }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <input type="text" name="search" class="form-control me-2" 
-                                   placeholder="搜索标题、内容或作者" value="{{ search_query }}">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </form>
+        <div class="liquid-glass-panel" style="padding: 1.5rem; border-radius: 8px;">
+            <form method="get" class="row g-3 align-items-end">
+                <!-- 搜索框 -->
+                <div class="col-md-6">
+                    <div class="position-relative">
+                        <div class="search-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <input type="text" name="search" class="form-control search-input" 
+                               placeholder="搜索标题、内容或作者..." value="{{ search_query }}">
                     </div>
                 </div>
-            </div>
-            <div class="card-body">
-                {% if articles %}
-                    <div class="row">
-                        {% for article in articles %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="card-title flex-grow-1">
-                                            <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
-                                                {{ article.title|default:"无标题"|truncatechars:50 }}
-                                            </a>
-                                        </h6>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                <i class="bi bi-three-dots"></i>
-                                            </button>
-                                            <ul class="dropdown-menu">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ article.url }}" target="_blank">
-                                                        <i class="bi bi-box-arrow-up-right"></i> 打开链接
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <button class="dropdown-item text-danger" onclick="deleteArticle({{ article.id }}, '{{ article.title|default:"无标题"|escapejs }}')">
-                                                        <i class="bi bi-trash"></i> 删除
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    {% if article.content %}
-                                    <p class="card-text text-muted small">
-                                        {{ article.content|truncatechars:100 }}
-                                    </p>
-                                    {% endif %}
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <span class="badge bg-info">
-                                                {% for choice in platform_choices %}
-                                                    {% if choice.0 == article.platform %}
-                                                        {{ choice.1 }}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </span>
-                                            {% if article.author %}
-                                                <br>{{ article.author }}
-                                            {% endif %}
-                                        </small>
-                                        <small class="text-muted">
-                                            {{ article.collected_at|date:"m-d H:i" }}
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                
+                <!-- 平台筛选 -->
+                <div class="col-md-4">
+                    <select name="platform" class="form-select">
+                        <option value="">全部平台</option>
+                        {% for choice in platform_choices %}
+                            <option value="{{ choice.0 }}" {% if current_platform == choice.0 %}selected{% endif %}>
+                                {{ choice.1 }}
+                            </option>
                         {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox display-1 text-muted"></i>
-                        <h5 class="text-muted mt-3">暂无文章</h5>
-                        <p class="text-muted">
-                            {% if search_query or current_platform %}
-                                没有找到符合条件的文章
-                            {% else %}
-                                开始收藏你的第一篇文章吧！
-                            {% endif %}
-                        </p>
-                        <a href="{% url 'articles:collect' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> 收藏文章
-                        </a>
-                    </div>
+                    </select>
+                </div>
+                
+                <!-- 搜索按钮 -->
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-accent w-100">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 文章列表 -->
+<div class="row">
+    <div class="col-12">
+        {% if articles %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <small class="text-muted">
+                    共 {{ total_count }} 篇{% if search_query or current_platform %}（已筛选）{% endif %}
+                </small>
+                {% if search_query or current_platform %}
+                    <a href="{% url 'articles:list' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> 清除筛选
+                    </a>
                 {% endif %}
             </div>
-        </div>
+            <div class="d-flex flex-column gap-3">
+                {% for article in articles %}
+                <div class="article-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="platform-badge {{ article.platform }}">
+                            {% for choice in platform_choices %}
+                                {% if choice.0 == article.platform %}
+                                    {{ choice.1 }}
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        
+                        <!-- 操作菜单 -->
+                        <div class="dropdown">
+                            <button class="action-btn" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ article.url }}" target="_blank">
+                                        <i class="bi bi-box-arrow-up-right"></i> 打开原文
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    {% if user.is_authenticated %}
+                                        <button class="dropdown-item text-danger" 
+                                                onclick="deleteArticle({{ article.id }}, '{{ article.title|default:"无标题"|escapejs }}')">
+                                            <i class="bi bi-trash"></i> 删除文章
+                                        </button>
+                                    {% else %}
+                                        <a class="dropdown-item text-danger" href="{% url 'articles:login' %}">
+                                            <i class="bi bi-box-arrow-in-right"></i> 登录后删除
+                                        </a>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3 class="article-title">
+                        {{ article.title|default:"无标题" }}
+                    </h3>
+                    
+                    {% if article.ai_key_point %}
+                    <div class="ai-key-point">
+                        <div class="ai-key-point-label">
+                            <i class="bi bi-stars"></i> 核心内容
+                        </div>
+                        <div class="ai-key-point-content">
+                            "{{ article.ai_key_point }}"
+                        </div>
+                    </div>
+                    {% elif article.content %}
+                    <div class="article-excerpt">
+                        {{ article.content|truncatechars:150 }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="article-meta">
+                        <div class="meta-left">
+                            <span class="collection-date">
+                                <i class="bi bi-calendar3"></i>
+                                {{ article.collected_at|date:"m月d日 H:i" }}
+                            </span>
+                            {% if article.author %}
+                                <span class="author">
+                                    <i class="bi bi-person"></i>
+                                    {{ article.author }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ article.url }}" target="_blank" 
+                           class="read-original-btn">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            阅读原文
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- 分页 (如果需要) -->
+            {% if articles.has_other_pages %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav>
+                    <ul class="pagination">
+                        {% if articles.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ articles.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_platform %}&platform={{ current_platform }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ articles.number }} / {{ articles.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if articles.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ articles.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_platform %}&platform={{ current_platform }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    {% if search_query or current_platform %}
+                        <i class="bi bi-search"></i>
+                    {% else %}
+                        <i class="bi bi-inbox"></i>
+                    {% endif %}
+                </div>
+                <h5>
+                    {% if search_query or current_platform %}
+                        没有找到符合条件的文章
+                    {% else %}
+                        还没有收藏任何文章
+                    {% endif %}
+                </h5>
+                <p class="text-muted">
+                    {% if search_query or current_platform %}
+                        尝试调整搜索条件或筛选器
+                    {% else %}
+                        开始收藏你的第一篇文章吧！
+                    {% endif %}
+                </p>
+                {% if not search_query and not current_platform %}
+                    <a href="{% url 'articles:collect' %}" class="btn btn-accent">
+                        <i class="bi bi-plus-lg"></i> 立即收藏
+                    </a>
+                {% else %}
+                    <a href="{% url 'articles:list' %}" class="btn btn-outline-accent">
+                        <i class="bi bi-arrow-left"></i> 查看全部
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// 删除文章功能
 function deleteArticle(articleId, articleTitle) {
-    if (confirm(`确定要删除文章 "${articleTitle}" 吗？此操作不可恢复。`)) {
-        fetch(`/api/articles/${articleId}/delete_article/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert('删除失败: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('删除失败，请稍后重试');
-        });
+    // 创建确认对话框
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content liquid-glass-panel" style="border-radius: 24px; border: none;">
+                <div class="modal-header border-0" style="padding: 1.5rem 1.5rem 0;">
+                    <h5 class="modal-title">确认删除</h5>
+                </div>
+                <div class="modal-body" style="padding: 1rem 1.5rem;">
+                    <p class="mb-0">确定要删除文章 "<strong>${articleTitle}</strong>" 吗？</p>
+                    <p class="text-muted small mb-0">此操作不可恢复。</p>
+                </div>
+                <div class="modal-footer border-0" style="padding: 0 1.5rem 1.5rem;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete(${articleId})">删除</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // 清理DOM
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function confirmDelete(articleId) {
+    // 关闭模态框
+    const modal = document.querySelector('.modal.show');
+    if (modal) {
+        bootstrap.Modal.getInstance(modal).hide();
+    }
+    
+    // 显示加载状态
+    const loadingToast = showToast('正在删除...', 'info');
+    
+    fetch(`/api/articles/${articleId}/delete_article/`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingToast.hide();
+        if (data.success) {
+            showToast(data.message, 'success');
+            // 延迟刷新页面
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('删除失败: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        loadingToast.hide();
+        console.error('Error:', error);
+        showToast('删除失败，请稍后重试', 'error');
+    });
+}
+
+// Toast 通知函数
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center border-0 ${getToastClass(type)}`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // 自动清理
+    toast.addEventListener('hidden.bs.toast', () => {
+        toastContainer.removeChild(toast);
+    });
+    
+    return bsToast;
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+
+function getToastClass(type) {
+    switch(type) {
+        case 'success': return 'text-bg-success';
+        case 'error': return 'text-bg-danger';
+        case 'warning': return 'text-bg-warning';
+        default: return 'text-bg-primary';
     }
 }
 
+// 获取CSRF Token
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -154,5 +335,19 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// 实时搜索 (可选)
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // 可以在这里实现实时搜索
+            }, 500);
+        });
+    }
+});
 </script>
 {% endblock %}

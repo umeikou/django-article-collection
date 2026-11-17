@@ -1,0 +1,21 @@
+{# 可复用订阅表单 — 用 class 选择器,可在页面上多实例共存 #}
+<form class="subscription-form js-subscribe-form">
+    <div class="mb-3">
+        <input type="email" class="form-control subscription-input js-subscribe-email" placeholder="输入您的邮箱地址" required>
+        <div class="invalid-feedback js-subscribe-email-error"></div>
+    </div>
+    <div class="mb-3 captcha-group">
+        <div class="d-flex align-items-center gap-2">
+            <span class="captcha-question js-subscribe-captcha-question">加载中...</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary js-subscribe-refresh" title="刷新验证码">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+        <input type="number" class="form-control mt-2 js-subscribe-captcha-answer" placeholder="输入计算结果" required>
+        <input type="hidden" class="js-subscribe-captcha-id">
+    </div>
+    <button type="submit" class="btn subscription-btn w-100 js-subscribe-submit">
+        <i class="bi bi-envelope-plus"></i> 订阅
+    </button>
+</form>
+<div class="subscription-message mt-2 js-subscribe-message" style="display: none;"></div>

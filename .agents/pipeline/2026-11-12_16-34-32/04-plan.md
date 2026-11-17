@@ -1,0 +1,66 @@
+# Implementation Plan
+
+- [ ] 1. Extend the persistent task schema for podcast work without changing the synchronous article flow.
+      Add the `xiaoyuzhou` platform; widen article/task URLs to 2,048 characters; make `CollectionTask.article` nullable `SET_NULL`; add the podcast lifecycle, ownership, lease, retry, progress, billing, URL-lock fields and the `PodcastEpisode`, event, ASR-attempt, transcript-segment, analysis-chunk, and analysis-rollup models. Create `0007_podcast_collection` from migration `0006`, including historical task backfill, task indexes, model uniqueness rules, and the active-podcast conditional URL-lock constraint; keep old article tasks compatible.
+      Files: `articles/models.py`, `articles/migrations/0007_podcast_collection.py`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py makemigrations --check --dry-run && python3 manage.py migrate --plan && python3 manage.py test articles.test_podcast_collection` — no model drift, migration plan contains only the new podcast migration, and the model/migration tests pass.
+
+- [ ] 2. Build the podcast submission and metadata trust boundaries.
+      Create `articles/podcast.py` with strict Xiaoyuzhou episode canonicalization, short atomic submission/deduplication with owner-safe 202/409 outcomes, safe task-event/state helpers, and the single metadata normalization/validation boundary. Add the versioned metadata adapter that imports the configured skill script, invokes `parse()`, and emits only one whitelisted safe JSON result; ensure paid/private episodes stop before audio, ASR, or AI and that no secrets, audio URLs, provider data, or exception payloads reach events or responses.
+      Files: `articles/podcast.py`, `articles/podcast_metadata_adapter.py`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py test articles.test_podcast_collection` — normalizer, task-lock race/deduplication, metadata validation/adapter, and paid/private rejection tests pass with all external operations mocked.
+
+- [ ] 3. Implement the lease-owned, restart-safe podcast worker and ASR protocol.
+      Add `process_podcast_tasks` with `--once`, `--loop`, `--worker-id`, and `--max-tasks`; acquire work through SQLite-compatible compare-and-swap updates, refresh a 120-second lease, honor cancellation at every persistence boundary, apply retry/poll backoff, and clean only validated per-attempt temporary directories. In `articles/podcast.py`, implement the metadata/access stages and the single ASR-submit billing gate, restricted subprocess environment/argument handling, strict submit/status/result parsers, result-segment persistence, uncertainty handling, and staff ASR reconciliation without automatic re-submission.
+      Files: `articles/podcast.py`, `articles/management/commands/process_podcast_tasks.py`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py test articles.test_podcast_collection` — mocked worker tests prove one-worker leasing, expired-lease takeover, polling and retry behavior, cancel-before-spawn, ASR parser/error classification, no fallback download, cleanup, and uncertain-submit reconciliation.
+
+- [ ] 4. Add full-transcript construction and non-truncating, auditable AI analysis.
+      Extend `articles/ai_service.py` with a separate `PodcastAnalysisClient.generate_or_raise()` that uses the configured DeepSeek endpoint but validates bounded JSON results and never logs prompts, response bodies, or credentials. Add deterministic transcript formatting plus lossless leaf chunking and recursive rollups in `articles/podcast.py`; persist each dispatch state/fingerprint before a call, never repeat successful work, turn stale or post-request ambiguity into `needs_attention`, permit only the specified staff confirmation to requeue one verified-undispatched item, and create the canonical Article only after complete success.
+      Files: `articles/ai_service.py`, `articles/podcast.py`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py test articles.test_podcast_collection` — tests cover a transcript over 3,000 characters, full content storage, exact source coverage, multi-level rollups, bounded client validation, completion gating, and uncertain chunk/rollup recovery without duplicate provider calls.
+
+- [ ] 5. Route podcast collection requests and task control APIs while retaining existing article behavior.
+      Raise serializer URL limits and split valid canonical episode URLs before synchronous collection: authenticated podcast submissions return the safe 202 task representation; regular URLs retain their current anonymous 201/400 duplicate behavior. Extend the task viewset with owner/staff visibility, podcast detail/events serialization, retry, cancellation, and strictly validated staff reconcile endpoints; protect active podcast-linked Articles from single and atomic batch deletion with 409 while preserving task evidence and URL locks.
+      Files: `articles/serializers.py`, `articles/views.py`, `articles/urls.py`, `articles/services.py`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py test articles.test_podcast_collection && python3 manage.py test` — API tests cover authentication, safe 202 payloads, duplicate/owner isolation, event order and pagination, action constraints, reconcile authorization, deletion protection, and unchanged ordinary-article responses; the full current Django suite passes.
+
+- [ ] 6. Give authenticated users visible and safe background-progress controls.
+      Replace the collection page’s synchronous POST behavior with CSRF-protected JSON submission that preserves the ordinary success experience and renders a podcast progress card for 202 responses. Update batch handling and dynamic UI output to use element/attribute APIs and `textContent`, poll only while the task remains actionable with specified network backoff, display only API-safe progress/events/cost/article data, and add retry/cancel controls based solely on server allow flags; add local card and Xiaoyuzhou badge styles.
+      Files: `templates/articles/collect.html`, `static/css/style.css`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py test articles.test_podcast_collection && python3 manage.py check` — template/API tests confirm terminal-state polling stop, safe rendering path, task-card controls, and Django system checks pass.
+
+- [ ] 7. Provide least-privilege administration and worker configuration without deploying it.
+      Register readonly, redacted podcast diagnostic models and task event inline in Django admin; expose staff actions only through the same reconcile validation and actor audit path. Add settings overridable in tests for approved script/interpreter, temporary root, child environment, lease/poll/backoff, and AI input size; supply a single-worker hardened systemd template plus a runbook covering secure script placement, credentials by environment variable name only, migration, lifecycle commands, lease/cancel/reconcile recovery, and temporary-data cleanup without executing systemctl actions.
+      Files: `articles/admin.py`, `article_collection_django/settings.py`, `article_collection_django/settings_production.py`, `podcast-collection-worker.service`, `PODCAST_WORKER.md`, `articles/test_podcast_collection.py`
+      Verify: `python3 manage.py check --settings=article_collection_django.settings_production && python3 manage.py test articles.test_podcast_collection` — production settings load, admin/configuration tests pass, and no tested admin/API representation contains audio URLs, ASR IDs, temporary paths, provider payloads, or credentials.
+
+- [ ] 8. Run the complete migration and regression gate with no external side effects.
+      Keep every new test isolated with temporary settings and mocks for HTTP, subprocesses, clocks, adapter scripts, ASR, and AI; do not read keys, download audio, invoke real systemd, or alter unrelated tracked/untracked work. Run the documented Django checks after the implementation and resolve only failures caused by this feature.
+      Files: `articles/test_podcast_collection.py` (if final coverage adjustments are needed)
+      Verify: `python3 manage.py makemigrations --check --dry-run && python3 manage.py migrate --plan && python3 manage.py check && python3 manage.py test articles.test_podcast_collection && python3 manage.py test` — no pending migrations, valid migration plan and system checks, focused podcast suite passes, and the full Django suite passes.
+
+## Digest
+
+| File | Block to change | Test coverage / verification |
+| --- | --- | --- |
+| `articles/models.py` | `Article` at lines 10–75 and `CollectionTask` at lines 77–107; add platform/task fields, alter URL/FK definitions, indexes/constraint, and append podcast models. | `articles/test_podcast_collection.py`: schema defaults, constraints, relation deletion behavior, platform/search. `makemigrations --check --dry-run`, `migrate --plan`. |
+| `articles/migrations/0007_podcast_collection.py` | New migration after `0006_weeklydigest_stat.Migration` (lines 4–27). | Focused migration executor tests from `0006`; `migrate --plan`. |
+| `articles/podcast.py` | New module: `normalize_xiaoyuzhou_episode_url`, `PodcastSubmissionService`, metadata/lease/event/ASR/cleanup/reconcile services, transcript formatter, and analysis coordinator. | Focused tests for URL rules, transaction races, state invariants, retry/cancel/lease, ASR and AI uncertainty, and final Article gating. |
+| `articles/podcast_metadata_adapter.py` | New adapter CLI that emits one safe JSON object. | Adapter import/error/output validation tests with mocked parser module. |
+| `articles/management/commands/process_podcast_tasks.py` | New `Command` with `add_arguments()` and `handle()` for one-boundary or loop processing. | Mocked `--once`/lease/poll/cancellation/subprocess tests in the focused suite. |
+| `articles/ai_service.py` | Add `PodcastAnalysisClient.generate_or_raise()` alongside `DeepSeekAIService` (lines 19–160) without changing `analyze_article()` (line 93). | Mocked JSON/error/input-bound tests and multi-chunk completion tests. |
+| `articles/serializers.py` | `ArticleCreateSerializer` (line 25), `BatchArticleCreateSerializer` (line 37), `CollectionTaskSerializer` (line 47); add safe podcast task/action serializers and 2,048-character URL fields. | API authentication, output-redaction, pagination/event ordering, and invalid action tests. |
+| `articles/views.py` | `ArticleViewSet.collect` (line 64), `collect_batch` (line 88), `delete_article` (line 124), `batch_delete` (line 142), and `CollectionTaskViewSet` (line 167); `collect_view` (line 223) becomes JSON-API-backed page rendering only. | API routing, legacy article regressions, ownership, task actions, and deletion-protection tests. |
+| `articles/urls.py` | Router setup at lines 9–11; retain router routes for new task actions. | DRF reverse/request tests in focused suite. |
+| `articles/services.py` | `ArticleCollectionService.collect_article` (line 303) and `collect_batch_articles` (line 375); only add compatibility defaults/routing glue. | Existing normal-article behavior tests plus podcast batch routing tests. |
+| `templates/articles/collect.html` | Main form (line 25), batch form (line 88), and scripts block (line 145); replace server-value `innerHTML` paths with safe DOM construction and add progress polling. | Render/request tests and focused assertions for terminal polling/safe output implementation. |
+| `static/css/style.css` | Platform badge rules at lines 193–227 and append localized podcast-card rules. | Template rendering plus `manage.py check`; no compiled asset step is defined. |
+| `articles/admin.py` | `CollectionTaskAdmin` beginning at line 35; add redacted readonly podcast registrations, inline, fields, and reconcile actions. | Focused admin configuration/redaction/action tests. |
+| `article_collection_django/settings.py` | AI configuration beginning at line 23; add non-secret `PODCAST_*` defaults suitable for `override_settings`. | Worker/client tests with `override_settings`; `manage.py check`. |
+| `article_collection_django/settings_production.py` | Production overrides after imported base settings (lines 5–84); set worker-readable, non-`/root` configuration defaults/overrides. | `python3 manage.py check --settings=article_collection_django.settings_production`. |
+| `podcast-collection-worker.service` | New hardened worker unit. | Review against runbook and production settings; no daemon action is executed. |
+| `PODCAST_WORKER.md` | New operational runbook. | Review commands and paths against the committed unit/settings; no deployment action is executed. |
+| `articles/test_podcast_collection.py` | New isolated `TestCase` and `TransactionTestCase` coverage for the complete pipeline. | `python3 manage.py test articles.test_podcast_collection` passes after implementation. |
+
+Baseline verification performed during planning: `python3 manage.py test` completed successfully with Django reporting **0 discovered tests** and `manage.py check` reporting no issues. The repository already contains extensive modified and untracked work; the implementation must not overwrite, clean, stage wholesale, or refactor that unrelated work.

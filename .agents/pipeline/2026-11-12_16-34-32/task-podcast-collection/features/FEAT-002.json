@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Implement the single-process, lease-owned podcast worker from persisted metadata through ASR, complete transcript, full recursive analysis, and final Article creation. It depends on FEAT-001 schema and submission services and must never make an unverified repeat paid call.",
+  "status": "pending",
+  "steps": [
+    "Expand /usr/Project/article_collection_django/articles/podcast.py with owner-guarded task transitions, 120-second lease refresh/CAS, terminal cleanup, metadata/access rejection, bounded retry/poll scheduling, and explicit needs_attention semantics. Network calls, subprocesses, sleeps, and AI calls must remain outside database transactions.",
+    "Add PodcastAsrClient/runner behavior in podcast.py: require AURALWISE_API_KEY without reading a key file; use the configured absolute interpreter/script and a scrubbed 0700 HOME environment; allow only submit/status/result argument arrays; parse only the specified bounded stdout/stderr/JSON forms; persist results segments and safe billing metadata; gate submit atomically and send uncertain submissions to needs_attention.",
+    "Implement staff reconciliation for uncertain ASR submission and state transitions in podcast.py. attach_verified_asr must status-verify outside the transaction then reuse the same attempt; abandon must release the lock only through terminal failed state; neither action can submit or create another attempt.",
+    "Add /usr/Project/article_collection_django/articles/management/commands/process_podcast_tasks.py with --once, --loop, --worker-id, and --max-tasks. Use SQLite CAS instead of select_for_update, process only podcast tasks, poll idle work every five seconds, and stop child processes safely on lease loss/cancel.",
+    "Add PodcastAnalysisClient.generate_or_raise in /usr/Project/article_collection_django/articles/ai_service.py without modifying DeepSeekAIService.analyze_article. It must use the existing endpoint/model/config but have bounded inputs/JSON results and safe error classifications/logging.",
+    "Add deterministic PodcastTranscriptFormatter and PodcastAnalysisService to podcast.py. Build an entire transcript from persisted segments; validate lossless source offsets; construct <=2800-character leaf chunks and recursive rollups without a transcript/chunk limit; persist calling fingerprint state before each provider request; resolve stale/post-request calls as uncertain; support only staff confirmation of one proven-undispatched chunk or rollup; and create Article only when every item and root succeeds.",
+    "Add non-secret PODCAST_* defaults and test-overridable paths/timeouts to /usr/Project/article_collection_django/article_collection_django/settings.py and production-safe overrides in settings_production.py. Production must not require nginx to read /root.",
+    "Extend articles/test_podcast_collection.py with mocked TransactionTestCase/TestCase coverage for lease acquisition/takeover, retry/polling, cancellation race windows, strict subprocess output, result persistence, cleanup, full transcript/rollup analysis, no duplicate AI calls, uncertainty/reconcile, and final Article gating."
+  ],
+  "acceptance_criteria": [
+    "A worker can safely resume an expired podcast task without discarding its ASR ID, transcript segments, successful analysis output, or retry state, while a valid lease prevents concurrent processing.",
+    "No cancel-before-spawn path launches ASR; no uncertain ASR or AI call is automatically repeated; stale calling analysis transitions to needs_attention with its URL lock retained.",
+    "Only confirmed FREE, non-private metadata with a validated HTTP(S) audio URL reaches ASR. Paid/private rows cause zero ASR, audio download, and AI calls.",
+    "An Article with complete untruncated transcript and root analysis appears only after all leaves and rollups succeed; conflicting canonical Article checksums enter needs_attention rather than overwrite data."
+  ],
+  "verification": [
+    "python3 manage.py test articles.test_podcast_collection",
+    "python3 manage.py check",
+    "python3 manage.py check --settings=article_collection_django.settings_production"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

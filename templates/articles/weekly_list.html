@@ -1,0 +1,313 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}阅读分享 · 于明浩的文章·播客列表{% endblock %}
+
+{% block content_col_class %}col-lg-8{% endblock %}
+
+{% block sidebar %}
+<div class="col-lg-4">
+    {% include 'articles/_sidebar.html' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- 页面标题 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1" style="font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em;">阅读分享</h2>
+                <p class="text-muted mb-0">每周精选文章合集 · AI 智能总结</p>
+            </div>
+            {% if user.is_authenticated %}
+                <a href="{% url 'articles:weekly_create' %}" class="btn btn-accent">
+                    <i class="bi bi-plus-lg"></i> 创建本周合集
+                </a>
+            {% else %}
+                <a href="{% url 'articles:login' %}" class="btn btn-accent">
+                    <i class="bi bi-box-arrow-in-right"></i> 登录后创建
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 合集列表 -->
+<div class="row">
+    <div class="col-12">
+        {% if digests %}
+            <div class="d-flex flex-column gap-4">
+                {% for digest in digests %}
+                <div class="weekly-digest-card">
+                    <div class="digest-header">
+                        <div class="digest-meta">
+                            <span class="week-badge">{{ digest.week_year }}</span>
+                            <span class="date-range">{{ digest.week_start|date:"m月d日" }} - {{ digest.week_end|date:"m月d日" }}</span>
+                        </div>
+                        <span class="article-count">{{ digest.articles.count }} 篇文章</span>
+                    </div>
+                    
+                    <h3 class="digest-title">
+                        <a href="{% url 'articles:weekly_detail' digest.id %}" class="text-decoration-none">
+                            {{ digest.title }}
+                        </a>
+                    </h3>
+                    
+                    <div class="digest-summary">
+                        <div class="summary-label">
+                            <i class="bi bi-stars"></i> AI 本周总结
+                        </div>
+                        <p class="summary-content">{{ digest.summary }}</p>
+                    </div>
+                    
+                    <div class="digest-footer">
+                        <div class="article-preview">
+                            {% for article in digest.articles.all|slice:":3" %}
+                                <span class="article-tag">{{ article.title|truncatechars:20 }}</span>
+                            {% endfor %}
+                            {% if digest.articles.count > 3 %}
+                                <span class="more-indicator">+{{ digest.articles.count|add:"-3" }} 更多</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'articles:weekly_detail' digest.id %}" class="read-digest-btn">
+                            <i class="bi bi-arrow-right"></i>
+                            阅读合集
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-calendar-week"></i>
+                </div>
+                <h5>还没有周阅读合集</h5>
+                <p class="text-muted">
+                    系统会在每周日晚自动生成本周的阅读合集<br>
+                    您也可以手动创建当前周的合集
+                </p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'articles:weekly_create' %}" class="btn btn-accent">
+                        <i class="bi bi-plus-lg"></i> 创建本周合集
+                    </a>
+                {% else %}
+                    <a href="{% url 'articles:login' %}" class="btn btn-accent">
+                        <i class="bi bi-box-arrow-in-right"></i> 登录后创建
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 说明信息 -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="info-panel">
+            <h6><i class="bi bi-info-circle"></i> 关于阅读分享</h6>
+            <ul class="info-list">
+                <li>系统每周日晚自动生成本周（周一至周日）收藏文章的合集</li>
+                <li>使用 QWEN AI 智能提取每篇文章的 300 字浓缩总结</li>
+                <li>AI 自动生成本周阅读的整体总结和洞察</li>
+                <li>支持手动创建和查看历史周合集</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* 周合集卡片 */
+.weekly-digest-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    transition: border-color 160ms ease, background-color 160ms ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.weekly-digest-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border-strong);
+    background-color: var(--surface-tint);
+}
+
+.digest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.digest-meta { display: flex; align-items: center; gap: 12px; }
+
+.week-badge {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.date-range {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.article-count {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
+.digest-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 14px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+.digest-title a {
+    color: var(--text-primary);
+    transition: color 160ms ease;
+}
+
+.digest-title a:hover {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.digest-summary {
+    background: var(--bg-color-alt);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+}
+
+.summary-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.summary-content {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    margin: 0;
+    font-weight: 400;
+}
+
+.digest-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.article-preview { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+
+.article-tag {
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 400;
+    border: 1px solid var(--border-color);
+}
+
+.more-indicator {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.read-digest-btn {
+    background: transparent;
+    color: var(--accent-color);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 160ms ease, color 160ms ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.read-digest-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    transform: none;
+    box-shadow: none;
+}
+
+/* 信息面板 */
+.info-panel {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-top: 20px;
+}
+
+.info-panel h6 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-weight: 500;
+    font-family: var(--font-serif);
+    font-size: 15px;
+}
+
+.info-panel h6 i { color: var(--accent-color); margin-right: 6px; }
+
+.info-list {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.info-list li { margin-bottom: 4px; }
+
+@media (max-width: 768px) {
+    .weekly-digest-card { padding: 20px; }
+    .digest-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .digest-footer { flex-direction: column; align-items: flex-start; }
+    .read-digest-btn { align-self: flex-end; }
+}
+</style>
+{% endblock %}

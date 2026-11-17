@@ -1,0 +1,467 @@
+{% extends 'articles/base.html' %}
+
+{% block title %}{{ digest.title }} · 于明浩的文章·播客列表{% endblock %}
+
+{% block content %}
+<!-- 返回按钮 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{% url 'articles:weekly_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> 返回阅读分享
+        </a>
+    </div>
+</div>
+
+<!-- 合集标题 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="digest-header-section">
+            <div class="header-meta">
+                <span class="week-badge">{{ digest.week_year }}</span>
+                <span class="date-range">{{ digest.week_start|date:"Y年m月d日" }} - {{ digest.week_end|date:"m月d日" }}</span>
+                <span class="article-count">{{ articles.count }} 篇文章</span>
+            </div>
+            <h1 class="digest-main-title">{{ digest.title }}</h1>
+        </div>
+    </div>
+</div>
+
+<!-- AI 本周总结 -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="weekly-summary-section">
+            <div class="summary-header">
+                <h3><i class="bi bi-stars"></i> 本周阅读洞察</h3>
+                <p class="summary-subtitle">AI 智能分析本周收藏文章的核心主题与价值</p>
+            </div>
+            <div class="summary-content">
+                {{ digest.summary }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文章列表 -->
+<div class="row">
+    <div class="col-12">
+        <div class="articles-section">
+            <h3 class="section-title">
+                <i class="bi bi-collection"></i> 本周收藏文章
+                <span class="article-counter">({{ articles.count }})</span>
+            </h3>
+            
+            {% if articles %}
+                <div class="weekly-articles-list">
+                    {% for article in articles %}
+                    <article class="weekly-article-item">
+                        <!-- 文章标题 -->
+                        <h4 class="article-title-song">
+                            {{ forloop.counter }}. {{ article.title|default:"无标题" }}
+                        </h4>
+                        
+                        <!-- 文章元信息 -->
+                        <div class="article-meta-info">
+                            <span class="platform-tag {{ article.platform }}">
+                                {% for choice in article.PLATFORM_CHOICES %}
+                                    {% if choice.0 == article.platform %}
+                                        {{ choice.1 }}
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% if article.author %}
+                                <span class="author-info">
+                                    <i class="bi bi-person"></i> {{ article.author }}
+                                </span>
+                            {% endif %}
+                            <span class="collect-time">
+                                <i class="bi bi-calendar3"></i> {{ article.collected_at|date:"m月d日 H:i" }}
+                            </span>
+                        </div>
+                        
+                        <!-- AI 300字总结 -->
+                        <div class="article-ai-summary">
+                            <div class="summary-label">
+                                <i class="bi bi-robot"></i> AI 浓缩总结 (300字)
+                            </div>
+                            <div class="summary-text">
+                                {% if article.ai_summary %}
+                                    {{ article.ai_summary }}
+                                {% else %}
+                                    <em class="text-muted">暂无AI总结，显示文章原始内容摘录...</em><br>
+                                    {{ article.content|truncatechars:300|default:"暂无内容摘要" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 阅读原文链接 -->
+                        <div class="article-actions">
+                            <a href="{{ article.url }}" target="_blank" class="read-original-link">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                阅读原文
+                            </a>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-articles">
+                    <p class="text-muted">本周暂无收藏文章</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 分享功能 -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="share-section">
+            <h4><i class="bi bi-share"></i> 分享本周合集</h4>
+            <p class="text-muted">将这份精心整理的阅读合集分享给朋友</p>
+            <div class="share-buttons">
+                <button class="btn btn-outline-primary" onclick="copyLink()">
+                    <i class="bi bi-link-45deg"></i> 复制链接
+                </button>
+                <button class="btn btn-outline-success" onclick="shareToWeChat()">
+                    <i class="bi bi-wechat"></i> 微信分享
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* 合集详情页 */
+.digest-header-section {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 36px 32px;
+    text-align: left;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.week-badge {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.date-range {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.article-count {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
+.digest-main-title {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+}
+
+/* 周总结区域 */
+.weekly-summary-section {
+    background: var(--bg-color-alt);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    border-radius: var(--radius-md);
+    padding: 32px;
+}
+
+.summary-header {
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.summary-header h3 {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+}
+
+.summary-header h3 i { color: var(--accent-color); margin-right: 6px; }
+
+.summary-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.summary-content {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--text-primary);
+    text-align: left;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+/* 文章列表区域 */
+.articles-section {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 32px;
+}
+
+.section-title {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.005em;
+}
+
+.section-title i { color: var(--accent-color); }
+
+.article-counter {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+    font-family: var(--font-sans);
+}
+
+.weekly-articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.weekly-article-item {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 24px;
+}
+
+.weekly-article-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* 文章标题:衬线体,优雅 */
+.article-title-song {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    line-height: 1.45;
+    letter-spacing: -0.005em;
+}
+
+.article-meta-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+/* 平台标签 — 与列表页保持一致的 outlined 风格 */
+.platform-tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    text-transform: none;
+    letter-spacing: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.platform-tag::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    display: inline-block;
+}
+
+.platform-tag.weixin::before     { background: #07C160; }
+.platform-tag.zhihu::before      { background: #0066CC; }
+.platform-tag.xiaohongshu::before{ background: #E01E37; }
+.platform-tag.jike::before       { background: #E5A800; }
+.platform-tag.juejin::before     { background: #1E80FF; }
+.platform-tag.csdn::before       { background: #E04A2B; }
+.platform-tag.other::before      { background: #8A8A85; }
+
+.author-info, .collect-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* AI 总结区域 */
+.article-ai-summary {
+    background: var(--bg-color-alt);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+}
+
+.summary-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.summary-label i { color: var(--accent-color); }
+
+.summary-text {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    text-align: left;
+    letter-spacing: 0;
+}
+
+.article-actions {
+    text-align: right;
+}
+
+.read-original-link {
+    background: transparent;
+    color: var(--accent-color);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 160ms ease, color 160ms ease;
+    border: 1px solid transparent;
+}
+
+.read-original-link:hover {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+    transform: none;
+    box-shadow: none;
+}
+
+/* 分享区域 */
+.share-section {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px 28px;
+    text-align: left;
+}
+
+.share-section h5 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+}
+
+.share-buttons {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .digest-header-section { padding: 24px; }
+    .header-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .digest-main-title { font-size: 24px; }
+    .weekly-summary-section { padding: 22px; }
+    .articles-section { padding: 22px; }
+    .article-meta-info { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .share-buttons { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('链接已复制到剪贴板', 'success');
+    }).catch(() => {
+        showToast('复制失败，请手动复制链接', 'error');
+    });
+}
+
+function shareToWeChat() {
+    // 这里可以集成微信分享SDK
+    showToast('请复制链接手动分享到微信', 'info');
+}
+
+function showToast(message, type = 'info') {
+    // 简单的toast实现
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span>${message}</span>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

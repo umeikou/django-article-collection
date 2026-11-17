@@ -1,0 +1,55 @@
+[Unit]
+Description=Umeikou Reading Share - Django Application
+After=network.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=exec
+User=nginx
+Group=nginx
+WorkingDirectory=/usr/Project/article_collection_django
+Environment=DJANGO_SETTINGS_MODULE=article_collection_django.settings_production
+Environment=PYTHONPATH=/usr/Project/article_collection_django
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+# 使用python3 -m gunicorn 来确保正确的路径
+ExecStart=/usr/local/bin/gunicorn \
+    --bind 127.0.0.1:8000 \
+    --workers 3 \
+    --worker-class sync \
+    --timeout 120 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --preload \
+    --access-logfile /usr/Project/article_collection_django/logs/access.log \
+    --error-logfile /usr/Project/article_collection_django/logs/error.log \
+    --log-level info \
+    --pid /usr/Project/article_collection_django/logs/gunicorn.pid \
+    article_collection_django.wsgi:application
+
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# 重启策略 - 确保24小时运行
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+
+# 健康检查
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+# 安全设置
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/usr/Project/article_collection_django
+PrivateTmp=true
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
