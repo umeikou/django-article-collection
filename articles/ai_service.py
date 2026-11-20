@@ -120,10 +120,49 @@ class DeepSeekAIService:
         try:
             key_point = self._extract_key_point(content, title)
             summary = self._generate_summary(content, title)
-            return {'key_point': key_point, 'summary': summary}
+            category = self.classify_category(title, summary or content[:800])
+            return {'key_point': key_point, 'summary': summary, 'category': category}
         except Exception as e:
             logger.error(f"AI 分析失败: {e}")
-            return {'key_point': '', 'summary': ''}
+            return {'key_point': '', 'summary': '', 'category': 'misc'}
+
+    def classify_category(self, title: str, text: str) -> str:
+        """根据标题与内容判断主题分类，返回 CATEGORY_CHOICES 中的代码，失败返回 misc。"""
+        valid = {'ai', 'business', 'human', 'life', 'sports', 'misc'}
+        prompt = f"""请判断以下内容属于哪个主题分类，只输出分类代码，不要任何其他文字。
+
+分类代码与说明：
+- ai：AI 与科技——人工智能、芯片硬件、科技产品、开源技术、编程开发
+- business：商场——平台动态、消费市场、行业分析、公司大厂、商业模式
+- human：人间——社会观察、非虚构叙事、教育、心理、家庭、制度
+- life：烟火——美食、旅行、健身、城市生活、日常消费体验
+- sports：赛场——体育比赛、运动员、赛事评论
+- misc：杂记——以上都不合适、小说虚构、难以归类
+
+判断规则：
+- AI 相关内容一律归 ai，即使它同时涉及商业
+- 城市观察、消费体验类报道（如地铁调价、酒店行业）归 business 还是 life，看重心：讲行业与市场归 business，讲个人体验与生活归 life
+- 拿不准就归 misc
+
+内容标题：{title if title else '无'}
+
+内容节选：
+{text[:1200]}
+
+分类代码："""
+
+        try:
+            # 推理模型会先输出思考过程，max_tokens 太小会导致正文为空
+            result = self.generate(prompt, max_tokens=512, temperature=0.0)
+            code = (result or '').strip().lower()
+            # 容错：截取第一个出现的合法代码
+            for v in valid:
+                if v in code:
+                    return v
+            return 'misc'
+        except Exception as e:
+            logger.warning(f"分类失败，回退为 misc: {e}")
+            return 'misc'
 
     def _extract_key_point(self, content: str, title: str = "") -> str:
         prompt = f"""请阅读以下文章，提炼出其中"值得思考"的主要观点，并以结构化方式输出。

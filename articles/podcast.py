@@ -391,7 +391,13 @@ class PodcastWorker:
         final=self._rollups(task, episode, texts)
         if final is None: return
         transcript=PodcastTranscriptFormatter.format(episode); episode.transcript_checksum=hashlib.sha256(transcript.encode()).hexdigest(); episode.save(update_fields=['transcript_checksum'])
-        article, _=Article.objects.get_or_create(url=episode.canonical_url,defaults={'title':episode.title,'content':transcript,'author':episode.author,'platform':'xiaoyuzhou','ai_summary':final.summary,'ai_key_point':format_key_points(final.key_points)})
+        # 主题分类：基于标题+最终摘要判断，失败回退 misc（不影响收藏）
+        try:
+            from .ai_service import DeepSeekAIService
+            category=DeepSeekAIService().classify_category(episode.title, final.summary)
+        except Exception:
+            category='misc'
+        article, _=Article.objects.get_or_create(url=episode.canonical_url,defaults={'title':episode.title,'content':transcript,'author':episode.author,'platform':'xiaoyuzhou','category':category,'ai_summary':final.summary,'ai_key_point':format_key_points(final.key_points)})
         episode.article=article; episode.audio_url=''; episode.save(update_fields=['article','audio_url'])
         self._set(task,status='success',stage='completed',progress=100,progress_message='播客已收藏并完成全文分析。',article=article,is_active=False,lease_owner='',lease_expires_at=None,error_code='',error_message='',next_action='')
         safe_event(task,'completed','播客已收藏并完成全文分析。')

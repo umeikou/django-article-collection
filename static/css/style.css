@@ -1229,3 +1229,126 @@ hr { border-color: var(--border-color); opacity: 1; }
         padding-bottom: 72px;
     }
 }
+
+/* ===== 首页改版（v2.1.0）===== */
+
+/* 平台分布 — 一行小标签 */
+.platform-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.platform-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 4px 12px;
+    background: var(--surface-color);
+}
+
+.platform-chip-count {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 新鲜度标记 */
+.new-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    border-radius: 999px;
+    padding: 3px 8px;
+    letter-spacing: 0.05em;
+}
+
+/* 摘要按行截断（代替 truncatechars 硬切） */
+.article-summary-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 摘要折叠开关 */
+.summary-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 4px;
+    cursor: pointer;
+}
+
+.summary-toggle:hover {
+    color: var(--accent-color);
+}
+
+.summary-toggle i {
+    font-size: 11px;
+    transition: transform 160ms ease;
+}
+
+.summary-toggle[aria-expanded="true"] {
+    color: var(--text-secondary);
+}
+
+/* 整卡可点 */
+.article-item-clickable {
+    cursor: pointer;
+}
+
+/* ===== 主题分类（v2.2.0）===== */
+
+/* 卡片上的分类小标签 */
+.category-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 2px 9px;
+    line-height: 1.4;
+}
+
+/* 文章库分类筛选 chips */
+.category-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-chip {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 4px 14px;
+    background: var(--surface-color);
+    transition: border-color 160ms ease, color 160ms ease;
+}
+
+.category-chip:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    text-decoration: none;
+}
+
+.category-chip.active {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    font-weight: 500;
+}

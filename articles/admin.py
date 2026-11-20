@@ -7,8 +7,8 @@ from .models import (Article, CollectionTask, PodcastEpisode, PodcastTaskEvent,
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ['title', 'platform', 'author', 'collected_at']
-    list_filter = ['platform', 'collected_at']
+    list_display = ['title', 'platform', 'category', 'author', 'collected_at']
+    list_filter = ['platform', 'category', 'collected_at']
     search_fields = ['title', 'author', 'url']
     readonly_fields = ['url_hash', 'collected_at', 'updated_at']
 

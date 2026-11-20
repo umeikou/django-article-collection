@@ -329,7 +329,8 @@ class ArticleCollectionService:
             # AI分析（如果启用且有内容）
             ai_summary = ''
             ai_key_point = ''
-            
+            category = 'misc'
+
             if enable_ai and article_data.get('content'):
                 logger.info(f"开始AI分析文章: {article_data.get('title', 'Unknown')}")
                 try:
@@ -341,13 +342,14 @@ class ArticleCollectionService:
                         )
                         ai_summary = ai_result.get('summary', '')
                         ai_key_point = ai_result.get('key_point', '')
-                        logger.info(f"AI分析完成: 核心观点={ai_key_point[:50]}...")
+                        category = ai_result.get('category', 'misc')
+                        logger.info(f"AI分析完成: 核心观点={ai_key_point[:50]}... 分类={category}")
                     else:
                         logger.warning("AI服务不可用，跳过AI分析")
                 except Exception as e:
                     logger.error(f"AI分析失败: {str(e)}")
                     # AI分析失败不影响文章收藏
-            
+
             # 保存文章
             article = Article.objects.create(
                 url=article_data['url'],
@@ -356,6 +358,7 @@ class ArticleCollectionService:
                 author=article_data.get('author'),
                 publish_time=article_data.get('publish_time'),
                 platform=article_data.get('platform'),
+                category=category,
                 ai_summary=ai_summary,
                 ai_key_point=ai_key_point
             )

@@ -481,9 +481,29 @@ class ArticleAnalysisPromptTests(TestCase):
         svc.generate = lambda prompt, **kw: (captured.append(prompt) or '1. 主要观点\n1.1 测试观点')
         long_content = '这是一段测试内容。' * 700  # ~6300 chars, well over the old 3000 cap
         svc.analyze_article(long_content, '标题')
-        self.assertEqual(len(captured), 2)  # key_point + summary prompts
-        self.assertGreater(max(len(p) for p in captured), 6000)
+        self.assertEqual(len(captured), 3)  # key_point + summary + category prompts
+        # key_point 与 summary 的 prompt 全文送入，不截断；category prompt 允许节选
+        self.assertGreater(max(len(p) for p in captured[:2]), 6000)
         self.assertNotIn('...', captured[0][-20:])
+
+    def test_classify_category_validates_code(self):
+        from articles.ai_service import DeepSeekAIService
+        svc = DeepSeekAIService()
+        svc.is_available = lambda: True
+        # 合法代码直接返回
+        svc.generate = lambda prompt, **kw: 'human'
+        self.assertEqual(svc.classify_category('标题', '内容'), 'human')
+        # 带杂讯的回复中包含合法代码也能提取
+        svc.generate = lambda prompt, **kw: '分类代码：business'
+        self.assertEqual(svc.classify_category('标题', '内容'), 'business')
+        # 无合法代码 → 回退 misc
+        svc.generate = lambda prompt, **kw: '不知道'
+        self.assertEqual(svc.classify_category('标题', '内容'), 'misc')
+        # 调用异常 → 回退 misc，不向上抛
+        def boom(prompt, **kw):
+            raise RuntimeError('api error')
+        svc.generate = boom
+        self.assertEqual(svc.classify_category('标题', '内容'), 'misc')
 
     def test_podcast_prompt_includes_style_requirements(self):
         from articles.ai_service import PodcastAnalysisClient

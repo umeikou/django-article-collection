@@ -278,23 +278,33 @@ def changelog_view(request):
 
 
 def index(request):
-    """首页视图"""
-    # 获取统计数据
+    """首页视图 — 以「最新收藏」为主体，统计仅作辅助信息"""
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # 统计数据
     total_articles = Article.objects.count()
-    platform_stats = Article.objects.values('platform').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    # 获取最新文章
-    recent_articles = Article.objects.all()[:10]
-    
+    week_new_count = Article.objects.filter(
+        collected_at__gte=timezone.now() - timedelta(days=7)
+    ).count()
+
+    # 获取最新文章，附加阅读时长 / 新鲜度标记
+    recent_articles = list(Article.objects.all()[:10])
+    for article in recent_articles:
+        chars = len(article.content or '')
+        if chars >= 300:
+            article.reading_minutes = max(1, round(chars / 400))
+        else:
+            article.reading_minutes = None
+        article.is_new = article.collected_at >= timezone.now() - timedelta(days=7)
+
     context = {
         'total_articles': total_articles,
-        'platform_stats': platform_stats,
+        'week_new_count': week_new_count,
         'recent_articles': recent_articles,
         'platform_choices': Article.PLATFORM_CHOICES,
     }
-    
+
     return render(request, 'articles/index.html', context)
 
 
@@ -306,6 +316,11 @@ def article_list(request):
     platform = request.GET.get('platform')
     if platform:
         articles = articles.filter(platform=platform)
+
+    # 主题分类筛选
+    category = request.GET.get('category')
+    if category:
+        articles = articles.filter(category=category)
 
     # 搜索
     search = request.GET.get('search')
@@ -325,6 +340,8 @@ def article_list(request):
         'total_count': paginator.count,
         'platform_choices': Article.PLATFORM_CHOICES,
         'current_platform': platform,
+        'category_choices': Article.CATEGORY_CHOICES,
+        'current_category': category,
         'search_query': search,
     }
 

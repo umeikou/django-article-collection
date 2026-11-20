@@ -12,6 +12,15 @@ class Article(models.Model):
         ('zhihu', '知乎'), ('juejin', '掘金'), ('csdn', 'CSDN'),
         ('xiaoyuzhou', '小宇宙播客'), ('other', '其他'),
     ]
+    # 主题分类（方案C）：AI 在收藏分析完成后自动归类，misc 为兜底
+    CATEGORY_CHOICES = [
+        ('ai', '硅浪'),        # AI 与科技
+        ('business', '商场'),  # 商业观察
+        ('human', '人间'),     # 社会与人文
+        ('life', '烟火'),      # 生活方式
+        ('sports', '赛场'),    # 体育
+        ('misc', '杂记'),      # 归不进去的
+    ]
     url = models.URLField(max_length=2048, unique=True, verbose_name='文章链接')
     url_hash = models.CharField(max_length=32, unique=True, verbose_name='URL哈希')
     title = models.CharField(max_length=500, blank=True, null=True, verbose_name='标题')
@@ -19,6 +28,7 @@ class Article(models.Model):
     author = models.CharField(max_length=200, blank=True, null=True, verbose_name='作者')
     publish_time = models.CharField(max_length=100, blank=True, null=True, verbose_name='发布时间')
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, verbose_name='平台')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='misc', verbose_name='主题分类')
     tags = models.CharField(max_length=500, blank=True, null=True, verbose_name='标签')
     ai_summary = models.TextField(blank=True, null=True, verbose_name='AI摘要(300字)')
     ai_key_point = models.CharField(max_length=500, blank=True, null=True, verbose_name='AI核心观点')

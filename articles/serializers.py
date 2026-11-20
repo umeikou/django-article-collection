@@ -5,9 +5,10 @@ from .models import Article, CollectionTask, PodcastTaskEvent
 
 class ArticleSerializer(serializers.ModelSerializer):
     platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
     class Meta:
         model = Article
-        fields = ['id','url','title','content','author','publish_time','platform','platform_display','tags','ai_summary','ai_key_point','collected_at','updated_at']
+        fields = ['id','url','title','content','author','publish_time','platform','platform_display','category','category_display','tags','ai_summary','ai_key_point','collected_at','updated_at']
         read_only_fields = ['id','url_hash','ai_summary','ai_key_point','collected_at','updated_at']
 
 
